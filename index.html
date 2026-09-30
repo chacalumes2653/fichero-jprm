@@ -1,0 +1,1008 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Fichero JPRM</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+:root{--az:#0d2b52;--az2:#1b4a86;--bg:#eef2f7;--card:#fff;--tx:#1a2230;--mu:#64748b;--ok:#15803d;--okbg:#dcfce7;--wa:#b45309;--wabg:#fef3c7;--er:#b91c1c;--erbg:#fee2e2;--bd:#d7dee8}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--tx)}
+header{background:var(--az);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
+header h1{font-size:17px;margin:0;flex:1;letter-spacing:.5px}
+header small{opacity:.8;font-size:12px}
+header button{background:transparent;border:1px solid #ffffff55;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px}
+main{max-width:640px;margin:0 auto;padding:16px}
+.card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 1px 3px #0001}
+h2{font-size:18px;margin:0 0 12px}
+label{display:block;font-size:13px;color:var(--mu);margin:12px 0 4px;font-weight:600}
+input,select,textarea{width:100%;padding:12px;border:1px solid var(--bd);border-radius:10px;font-size:16px;background:#fff;color:var(--tx)}
+textarea{min-height:70px}
+.btn{display:block;width:100%;padding:14px;border:0;border-radius:12px;background:var(--az2);color:#fff;font-size:16px;font-weight:700;margin-top:14px;cursor:pointer}
+.btn.sec{background:#e2e8f0;color:var(--tx)}
+.btn.ok{background:var(--ok)}
+.btn.er{background:var(--er)}
+.btn:disabled{opacity:.5}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{background:var(--card);border:0;border-radius:16px;padding:22px 10px;font-size:15px;font-weight:700;color:var(--az);box-shadow:0 1px 3px #0002;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px}
+.tile span{font-size:30px}
+.row{display:flex;gap:8px}
+.row>*{flex:1}
+.row .btn{margin-top:0}
+.item{padding:12px;border:1px solid var(--bd);border-radius:12px;margin-top:8px;cursor:pointer;background:#fff}
+.item b{display:block}
+.item .meta{font-size:13px;color:var(--mu)}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;margin-top:4px}
+.b-ok{background:var(--okbg);color:var(--ok)}
+.b-wa{background:var(--wabg);color:var(--wa)}
+.b-er{background:var(--erbg);color:var(--er)}
+.alerta{border-radius:12px;padding:14px;margin-top:12px;font-size:15px}
+.alerta.er{background:var(--erbg);color:var(--er);border:2px solid var(--er)}
+.alerta.wa{background:var(--wabg);color:var(--wa)}
+.alerta.ok{background:var(--okbg);color:var(--ok)}
+.radio{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid var(--bd);border-radius:10px;margin-top:8px;font-size:15px}
+.radio input{width:auto}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
+.stats div{background:var(--bg);border-radius:10px;padding:10px 4px}
+.stats b{display:block;font-size:22px}
+.stats small{font-size:11px;color:var(--mu)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 5px;border-bottom:1px solid var(--bd);vertical-align:top}
+th{color:var(--mu);font-size:12px}
+.ticket{text-align:center}
+.ticket .big{font-size:40px}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;text-align:left;font-size:15px;margin-top:10px}
+.dl dt{color:var(--mu)}
+.dl dd{margin:0;font-weight:600}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#111;color:#fff;padding:12px 18px;border-radius:10px;font-size:14px;display:none;z-index:20;max-width:90%}
+#toast.er{background:var(--er)}
+#scanModal{position:fixed;inset:0;background:#000d;display:none;z-index:15;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+#reader{width:100%;max-width:420px;background:#000;border-radius:12px;overflow:hidden}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:-4px -4px 12px;padding:4px}
+.tabs button{flex:0 0 auto;border:1px solid var(--bd);background:#fff;border-radius:99px;padding:8px 14px;font-size:14px;font-weight:600;color:var(--tx);cursor:pointer}
+.tabs button.on{background:var(--az);color:#fff;border-color:var(--az)}
+.btn.chico{display:inline-block;width:auto;padding:7px 12px;font-size:13px;margin:6px 6px 0 0;border-radius:9px}
+.b-mu{background:#e2e8f0;color:#475569}
+.b-az{background:#dbeafe;color:#1e40af}
+.cred{font-family:ui-monospace,Consolas,monospace;font-size:22px;font-weight:700;letter-spacing:1px}
+.pindots{text-align:center;font-size:28px;letter-spacing:10px;min-height:40px;margin-top:8px}
+.etiqueta{border:2px dashed var(--bd);border-radius:12px;padding:14px;display:flex;gap:14px;align-items:center}
+.etiqueta .qr img,.etiqueta .qr canvas{width:120px;height:120px}
+.etiqueta .tx{font-size:14px}
+.etiqueta .tx b{font-size:16px}
+.hide{display:none!important}
+@media print{
+  header,.noprint,#toast{display:none!important}
+  body{background:#fff}
+  .card{box-shadow:none;padding:0}
+  .etiqueta{border:1px solid #000}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div style="flex:1">
+    <h1>📁 FICHERO · JPRM</h1>
+    <small id="hdrUser">Control de material de pacientes</small>
+  </div>
+  <button id="btnSalir" class="hide" onclick="salir()">Salir</button>
+</header>
+
+<main>
+
+<!-- ============ LOGIN ============ -->
+<section class="view" id="vLogin">
+  <div class="card">
+    <h2>Acceso autorizado</h2>
+    <label>Usuario (tu DNI)</label>
+    <input id="lUsuario" autocomplete="username" autocapitalize="none" inputmode="text" onkeydown="if(event.key==='Enter')$('lPass').focus()">
+    <label>Contraseña</label>
+    <input id="lPass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn" id="lBtn" onclick="login()">Ingresar</button>
+    <p class="meta" style="font-size:13px;color:var(--mu);margin:12px 0 0">Si no tenés usuario, pedíselo al administrador del fichero.</p>
+  </div>
+</section>
+
+<!-- ============ CAMBIAR CONTRASEÑA ============ -->
+<section class="view hide" id="vPass">
+  <div class="card">
+    <h2>🔑 Cambiar contraseña</h2>
+    <div id="pAviso" class="alerta wa hide" style="margin-top:0">Es tu primer ingreso (o te blanquearon la clave): elegí una contraseña propia.</div>
+    <label>Contraseña actual</label>
+    <input id="pAct" type="password" autocomplete="current-password">
+    <label>Contraseña nueva (mínimo 6 caracteres)</label>
+    <input id="pNue" type="password" autocomplete="new-password">
+    <label>Repetir contraseña nueva</label>
+    <input id="pRep" type="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')cambiarPass()">
+    <button class="btn ok" id="pBtn" onclick="cambiarPass()">Guardar contraseña</button>
+  </div>
+  <button class="btn sec" id="pVolver" onclick="irMenu()">← Volver</button>
+</section>
+
+<!-- ============ MENÚ ============ -->
+<section class="view hide" id="vMenu">
+  <div id="menuAlerta"></div>
+  <div class="grid" style="margin-top:12px">
+    <button class="tile" onclick="abrirBuscar('sacar')"><span>📤</span>Sacar material</button>
+    <button class="tile" onclick="abrirDevolver()"><span>📥</span>Devolver material</button>
+    <button class="tile" onclick="abrirAlta()"><span>➕</span>Ingresar material nuevo</button>
+    <button class="tile" onclick="abrirBuscar('consulta')"><span>🔎</span>¿Dónde está un legajo?</button>
+  </div>
+  <button class="btn hide" id="btnAdmin" style="background:var(--az)" onclick="abrirAdmin()">⚙️ Panel de administración</button>
+  <button class="btn sec" onclick="abrirCambioPass(false)">🔑 Cambiar mi contraseña</button>
+</section>
+
+<!-- ============ BUSCAR ============ -->
+<section class="view hide" id="vBuscar">
+  <div class="card">
+    <h2 id="bTitulo">Buscar material</h2>
+    <div class="row">
+      <input id="bQ" placeholder="Apellido, DNI, legajo o código" onkeydown="if(event.key==='Enter')buscar()">
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" onclick="buscar()">Buscar</button>
+      <button class="btn sec" onclick="escanear(t=>{$('bQ').value=t;buscar(true)})">📷 Escanear</button>
+    </div>
+    <div id="bRes"></div>
+  </div>
+  <button class="btn sec" onclick="irMenu()">← Volver</button>
+</section>
+
+<!-- ============ SACAR (formulario) ============ -->
+<section class="view hide" id="vSacar">
+  <div class="card">
+    <h2>📤 Sacar material</h2>
+    <div id="sMat"></div>
+    <div id="sForm">
+      <label>¿A dónde va?</label>
+      <select id="sDestino" onchange="$('sDestOtro').classList.toggle('hide',this.value!=='Otro')">
+        <option value="">— Elegir —</option>
+        <option>Consultorio médico</option>
+        <option>Psiquiatría</option>
+        <option>Psicología</option>
+        <option>Toxicología</option>
+        <option>Jefatura / Dirección</option>
+        <option>Mesa de entradas</option>
+        <option>Otra dependencia</option>
+        <option>Otro</option>
+      </select>
+      <input id="sDestOtro" class="hide" style="margin-top:8px" placeholder="Especificar destino">
+      <label>Motivo</label>
+      <label class="radio"><input type="radio" name="sMot" value="Reconocimiento médico del día" checked onchange="motivoCambio()"> Reconocimiento médico del día</label>
+      <label class="radio"><input type="radio" name="sMot" value="A solicitud" onchange="motivoCambio()"> A solicitud de…</label>
+      <input id="sSolic" class="hide" style="margin-top:8px" placeholder="¿Quién lo solicita? (jerarquía, apellido, oficina)">
+      <label>Observaciones (opcional)</label>
+      <textarea id="sObs"></textarea>
+      <button class="btn" id="sBtn" onclick="confirmarSalida()">Registrar salida</button>
+    </div>
+  </div>
+  <button class="btn sec" onclick="abrirBuscar('sacar')">← Volver</button>
+</section>
+
+<!-- ============ DEVOLVER ============ -->
+<section class="view hide" id="vDevolver">
+  <div class="card">
+    <h2>📥 Devolver material</h2>
+    <button class="btn sec" style="margin-top:0" onclick="escanear(t=>devolverPorCodigo(t))">📷 Escanear el sobre</button>
+    <label>Material que está afuera</label>
+    <div id="dLista"></div>
+  </div>
+  <button class="btn sec" onclick="irMenu()">← Volver</button>
+</section>
+
+<!-- ============ ALTA ============ -->
+<section class="view hide" id="vAlta">
+  <div class="card">
+    <h2>➕ Ingresar material nuevo</h2>
+    <label>Código (si el sobre ya tiene etiqueta, escanealo; si no, se genera solo)</label>
+    <div class="row">
+      <input id="aCod" placeholder="Automático">
+      <button class="btn sec" style="flex:0 0 70px;margin:0" onclick="escanear(t=>$('aCod').value=limpiarCodigo(t))">📷</button>
+    </div>
+    <label>Apellido y nombre del paciente *</label>
+    <input id="aNom">
+    <div class="row">
+      <div><label>DNI</label><input id="aDni" inputmode="numeric" onchange="autocompletarAlta('aDni')"></div>
+      <div><label>Legajo policial</label><input id="aLeg" inputmode="numeric" onchange="autocompletarAlta('aLeg')"></div>
+    </div>
+    <label>Tipo de material</label>
+    <select id="aTipo"><option>Legajo</option><option>Historia clínica</option><option>Estudios</option><option>Expediente</option><option>Otro</option></select>
+    <label>Ubicación en el fichero</label>
+    <input id="aUbi" placeholder="Ej: Cajón 3 · A–F">
+    <label>Observaciones</label>
+    <textarea id="aObs"></textarea>
+    <button class="btn ok" id="aBtn" onclick="guardarAlta()">Guardar e imprimir etiqueta</button>
+  </div>
+  <button class="btn sec" onclick="irMenu()">← Volver</button>
+</section>
+
+<!-- ============ TICKET / ETIQUETA ============ -->
+<section class="view hide" id="vTicket">
+  <div class="card" id="tBody"></div>
+  <div class="noprint">
+    <button class="btn" id="tPrint" onclick="window.print()">🖨️ Imprimir</button>
+    <button class="btn sec" onclick="volver()">Listo</button>
+  </div>
+</section>
+
+<!-- ============ REPORTE ============ -->
+<section class="view hide" id="vReporte">
+  <div class="card">
+    <div class="row noprint" style="align-items:end">
+      <div><label style="margin-top:0">Fecha</label><input type="date" id="rFecha" onchange="cargarReporte()"></div>
+    </div>
+    <h2 style="margin-top:14px">Reporte diario de legajos · <span id="rTit"></span></h2>
+    <div class="stats" id="rStats"></div>
+    <div id="rAlertas"></div>
+    <h2 style="margin-top:18px;font-size:16px">Movimientos del día</h2>
+    <div style="overflow-x:auto"><table id="rTabla"></table></div>
+  </div>
+  <div class="noprint">
+    <div class="row">
+      <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn ok" onclick="compartirWA()">WhatsApp</button>
+    </div>
+    <button class="btn sec" onclick="volver()">← Volver</button>
+  </div>
+</section>
+
+<!-- ============ QR FICHERO ============ -->
+<section class="view hide" id="vQrFichero">
+  <div class="card ticket">
+    <h2>FICHERO · JUNTA MÉDICA</h2>
+    <div id="qfBox" style="display:flex;justify-content:center;margin:14px 0"></div>
+    <p style="font-size:18px;font-weight:700;margin:0">Escaneá para sacar, devolver o ingresar material</p>
+    <p style="color:var(--mu);font-size:13px">Solo personal autorizado</p>
+  </div>
+  <div class="noprint">
+    <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
+    <button class="btn sec" onclick="volver()">← Volver</button>
+  </div>
+</section>
+
+<!-- ============ PANEL ADMIN ============ -->
+<section class="view hide" id="vAdmin">
+  <div class="card">
+    <h2>⚙️ Panel de administración</h2>
+    <div class="tabs">
+      <button data-t="personal" onclick="adminTab('personal')">👥 Personal autorizado</button>
+      <button data-t="material" onclick="adminTab('material')">📁 Material</button>
+      <button data-t="movs" onclick="adminTab('movs')">📜 Movimientos</button>
+      <button data-t="otros" onclick="adminTab('otros')">📊 Reporte y QR</button>
+    </div>
+
+    <div id="tabPersonal">
+      <button class="btn ok" style="margin-top:0" onclick="abrirUsuario(null)">➕ Agregar personal autorizado</button>
+      <div id="uLista"></div>
+    </div>
+
+    <div id="tabMaterial" class="hide">
+      <div class="stats" id="mStats"></div>
+      <div class="row" style="margin-top:12px">
+        <input id="mQ" placeholder="Apellido, DNI, legajo o código" onkeydown="if(event.key==='Enter')cargarMaterialAdmin()">
+        <select id="mEst" style="flex:0 0 130px" onchange="cargarMaterialAdmin()">
+          <option value="">Todos</option><option value="en_fichero">En fichero</option><option value="afuera">Afuera</option><option value="baja">De baja</option>
+        </select>
+      </div>
+      <button class="btn sec" style="margin-top:8px" onclick="cargarMaterialAdmin()">Buscar</button>
+      <div id="mLista"></div>
+    </div>
+
+    <div id="tabMovs" class="hide">
+      <div class="row">
+        <div><label style="margin-top:0">Desde</label><input type="date" id="vDesde"></div>
+        <div><label style="margin-top:0">Hasta</label><input type="date" id="vHasta"></div>
+      </div>
+      <div class="row">
+        <div><label>Quién</label><select id="vUser"><option value="">Todos</option></select></div>
+        <div><label>Tipo</label><select id="vTipo"><option value="">Todos</option><option value="salida">Salidas</option><option value="devolucion">Devoluciones</option><option value="alta">Altas</option><option value="baja">Bajas</option><option value="reactivacion">Reactivaciones</option></select></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" onclick="cargarMovs()">Ver</button>
+        <button class="btn sec" onclick="descargarMovs()">⬇️ Excel (CSV)</button>
+      </div>
+      <p class="meta" id="vInfo" style="color:var(--mu);font-size:13px"></p>
+      <div style="overflow-x:auto"><table id="vTabla"></table></div>
+    </div>
+
+    <div id="tabOtros" class="hide">
+      <button class="btn" style="margin-top:0" onclick="abrirReporte()">📊 Reporte diario</button>
+      <button class="btn sec" onclick="abrirQrFichero()">🖨️ QR del fichero (para imprimir y pegar)</button>
+    </div>
+  </div>
+  <button class="btn sec" onclick="irMenu()">← Volver al menú</button>
+</section>
+
+<!-- ============ ADMIN: ALTA / EDICIÓN DE PERSONAL ============ -->
+<section class="view hide" id="vUsuario">
+  <div class="card">
+    <h2 id="uTit">➕ Agregar personal autorizado</h2>
+    <div id="uBuscarBox">
+      <label style="margin-top:0">Buscar en el padrón (DNI, legajo o apellido)</label>
+      <div class="row">
+        <input id="uQ" onkeydown="if(event.key==='Enter')buscarPadronUsuario()">
+        <button class="btn sec" style="flex:0 0 90px;margin:0" onclick="buscarPadronUsuario()">Buscar</button>
+      </div>
+      <div id="uRes"></div>
+    </div>
+    <label>Apellido y nombre *</label><input id="uNom">
+    <div class="row">
+      <div><label>Jerarquía</label><input id="uJer"></div>
+      <div><label>Rol *</label><select id="uRol"><option value="autorizado">Autorizado</option><option value="oficial">Oficial</option><option value="admin">Administrador</option></select></div>
+    </div>
+    <div class="row">
+      <div><label>DNI</label><input id="uDni" inputmode="numeric" oninput="if(!uEditId)$('uUsu').value=this.value.replace(/\D/g,'')"></div>
+      <div><label>Legajo</label><input id="uLeg" inputmode="numeric"></div>
+    </div>
+    <label>Usuario para ingresar *</label><input id="uUsu" autocapitalize="none">
+    <div id="uPassBox">
+      <label>Contraseña inicial * (se la das a la persona; la cambia en el primer ingreso)</label>
+      <div class="row"><input id="uPass"><button class="btn sec" style="flex:0 0 90px;margin:0" onclick="$('uPass').value=claveTemporal()">Generar</button></div>
+    </div>
+    <label class="radio hide" id="uActBox"><input type="checkbox" id="uAct"> Activo (puede ingresar)</label>
+    <button class="btn ok" id="uBtn" onclick="guardarUsuario()">Guardar</button>
+    <button class="btn er hide" id="uReset" onclick="blanquearClave()">🔑 Blanquear contraseña</button>
+  </div>
+  <button class="btn sec" onclick="abrirAdmin('personal')">← Volver al panel</button>
+</section>
+
+<!-- ============ ADMIN: CREDENCIALES PARA ENTREGAR ============ -->
+<section class="view hide" id="vCred">
+  <div class="card ticket" id="cBody"></div>
+  <div class="noprint">
+    <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
+    <button class="btn sec" onclick="abrirAdmin('personal')">Listo</button>
+  </div>
+</section>
+
+</main>
+
+<div id="scanModal">
+  <div id="reader"></div>
+  <button class="btn sec" style="max-width:420px" onclick="cerrarScan()">Cancelar</button>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ================== CONFIGURACIÓN ================== */
+const SUPABASE_URL = 'https://kyofdbedxoebwvjicppp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_C_8uYK42SkpzHg8pLbP8GA_wdWu6ylS';
+const HORAS_SESION = 12;           // cuánto dura el login en el celular
+/* =================================================== */
+
+// El token de sesión viaja en el encabezado x-fichero-token: sin él, Supabase no devuelve nada.
+function crearCliente(token){
+  return supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: token ? { 'x-fichero-token': token } : {} }
+  });
+}
+let sb = crearCliente(null);
+const TZ = 'America/Argentina/Buenos_Aires';
+const $ = id => document.getElementById(id);
+let user = null, sel = null, scanner = null, modoBuscar = 'sacar', ultimoReporte = '';
+
+/* ---------- utilidades ---------- */
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = ts => new Date(ts).toLocaleString('es-AR',{timeZone:TZ,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+const hora = ts => new Date(ts).toLocaleTimeString('es-AR',{timeZone:TZ,hour:'2-digit',minute:'2-digit'});
+const hoyISO = () => new Date().toLocaleDateString('en-CA',{timeZone:TZ});
+const inicioDia = d => new Date(d + 'T00:00:00-03:00');
+const baseURL = () => location.origin + location.pathname;
+
+function toast(msg, err){
+  const t = $('toast'); t.textContent = msg; t.className = err ? 'er' : ''; t.style.display = 'block';
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 3200);
+}
+function show(id){
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('hide', v.id !== id));
+  window.scrollTo(0,0);
+}
+function limpiarCodigo(t){
+  t = String(t).trim();
+  try { const u = new URL(t); return u.searchParams.get('m') || t; } catch(e){ return t; }
+}
+function lsGet(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } }
+function lsSet(k,v){ try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+
+/* ---------- LOGIN ---------- */
+async function login(){
+  const u = $('lUsuario').value.trim(), p = $('lPass').value;
+  if(!u) return toast('Ingresá tu usuario', 1);
+  if(!p) return toast('Ingresá la contraseña', 1);
+  $('lBtn').disabled = true;
+  const { data, error } = await crearCliente(null).rpc('fichero_login', { p_usuario: u, p_pass: p });
+  $('lBtn').disabled = false;
+  if(error) return toast(error.message || 'Error de conexión', 1);
+  if(!data || !data.length){ $('lPass').value = ''; return toast('Usuario o contraseña incorrectos', 1); }
+  const d = data[0];
+  user = { id: d.id, nombre: d.nombre, jerarquia: d.jerarquia, rol: d.rol };
+  sb = crearCliente(d.token);
+  lsSet('fichero_sesion', { token: d.token, user, exp: Date.now() + HORAS_SESION*3600e3 });
+  lsSet('fichero_ultimo_usuario', u);
+  $('lPass').value = '';
+  if(d.debe_cambiar) return abrirCambioPass(true);
+  entrar();
+}
+async function salir(msg){
+  try { if(user) await sb.rpc('fichero_logout'); } catch(e){}
+  lsSet('fichero_sesion', null); user = null; sb = crearCliente(null);
+  $('btnSalir').classList.add('hide'); $('hdrUser').textContent = 'Control de material de pacientes';
+  $('lUsuario').value = lsGet('fichero_ultimo_usuario') || '';
+  show('vLogin');
+  if(typeof msg === 'string') toast(msg, 1);
+}
+// Verifica contra el servidor que la sesión siga vigente
+async function sesionViva(){
+  const { data, error } = await sb.rpc('fichero_yo');
+  if(error || !data || !data.length){ salir('Tu sesión venció. Ingresá de nuevo.'); return null; }
+  return data[0];
+}
+function nombreUser(){ return (user.jerarquia ? user.jerarquia + ' ' : '') + user.nombre; }
+const esAdmin = () => user && user.rol === 'admin';
+
+function abrirCambioPass(obligatorio){
+  ['pAct','pNue','pRep'].forEach(id => $(id).value = '');
+  $('pAviso').classList.toggle('hide', !obligatorio);
+  $('pVolver').classList.toggle('hide', !!obligatorio);
+  $('btnSalir').classList.remove('hide');
+  $('hdrUser').textContent = '👤 ' + nombreUser();
+  show('vPass');
+}
+async function cambiarPass(){
+  const a = $('pAct').value, n = $('pNue').value, r = $('pRep').value;
+  if(!a || !n) return toast('Completá las contraseñas', 1);
+  if(n.length < 6) return toast('La nueva tiene que tener al menos 6 caracteres', 1);
+  if(n !== r) return toast('Las contraseñas nuevas no coinciden', 1);
+  if(n === a) return toast('La nueva tiene que ser distinta de la actual', 1);
+  $('pBtn').disabled = true;
+  const { error } = await sb.rpc('fichero_cambiar_pass', { p_actual: a, p_nueva: n });
+  $('pBtn').disabled = false;
+  if(error) return toast(error.message, 1);
+  toast('✅ Contraseña cambiada');
+  entrar();
+}
+
+async function entrar(){
+  $('hdrUser').textContent = '👤 ' + nombreUser() + (esAdmin() ? ' · Admin' : '');
+  $('btnSalir').classList.remove('hide');
+  $('btnAdmin').classList.toggle('hide', !esAdmin());
+  // ¿Se abrió escaneando la etiqueta de un sobre? (?m=CODIGO)
+  const m = new URLSearchParams(location.search).get('m');
+  if(m){
+    history.replaceState(null, '', baseURL());
+    const { data } = await sb.from('fichero_materiales').select('*').eq('codigo', m).maybeSingle();
+    if(data && data.estado !== 'baja'){ modoBuscar = data.estado === 'afuera' ? 'devolver' : 'sacar'; return elegir(data); }
+    toast('Código no registrado: ' + m, 1);
+  }
+  irMenu();
+}
+
+/* ---------- MENÚ ---------- */
+async function irMenu(){
+  enAdmin = false;
+  show('vMenu');
+  if(!(await sesionViva())) return;
+  const { data } = await sb.from('fichero_materiales').select('id').eq('estado','afuera');
+  const afuera = data || [];
+  let vencidos = 0;
+  if(afuera.length){
+    const salidas = await ultimasSalidas(afuera.map(a => a.id));
+    const ini = inicioDia(hoyISO());
+    vencidos = Object.values(salidas).filter(s => new Date(s.fecha_hora) < ini).length;
+  }
+  $('menuAlerta').innerHTML = vencidos
+    ? `<div class="alerta er" onclick="${esAdmin()?'abrirReporte()':'abrirDevolver()'}">⚠️ <b>${vencidos}</b> legajo(s) NO volvieron al fichero desde días anteriores. Tocá para ver.</div>`
+    : afuera.length
+      ? `<div class="alerta wa" onclick="abrirDevolver()">📤 ${afuera.length} material(es) fuera del fichero hoy.</div>`
+      : `<div class="alerta ok">✅ Todo el material está en el fichero.</div>`;
+}
+async function ultimasSalidas(ids){
+  if(!ids.length) return {};
+  const { data } = await sb.from('fichero_movimientos').select('*').in('material_id', ids).eq('tipo','salida').order('fecha_hora',{ascending:false});
+  const map = {};
+  (data || []).forEach(m => { if(!map[m.material_id]) map[m.material_id] = m; });
+  return map;
+}
+
+/* ---------- BUSCAR ---------- */
+function abrirBuscar(modo){
+  modoBuscar = modo;
+  $('bTitulo').textContent = modo === 'sacar' ? '📤 Sacar material' : '🔎 ¿Dónde está?';
+  $('bQ').value = ''; $('bRes').innerHTML = '';
+  show('vBuscar'); setTimeout(() => $('bQ').focus(), 100);
+}
+async function buscar(exacto){
+  let q = limpiarCodigo($('bQ').value).replace(/[,()*%]/g, ' ').replace(/\s+/g, ' ').trim();
+  if(!q) return;
+  $('bRes').innerHTML = '<p class="meta">Buscando…</p>';
+  if(exacto){
+    const { data } = await sb.from('fichero_materiales').select('*').eq('codigo', q).neq('estado','baja');
+    if(data && data.length === 1) return elegir(data[0]);
+  }
+  // Número → DNI / legajo / código exacto. Texto → apellido y nombre.
+  const num = /^[0-9.]+$/.test(q) ? q.replace(/\./g, '') : null;
+  let qm = sb.from('fichero_materiales').select('*').neq('estado','baja').order('apellido_nombre').limit(25);
+  qm = num ? qm.or(`codigo.eq.${num},dni.eq.${num},legajo_policial.eq.${num}`)
+           : qm.or(`codigo.eq.${q},apellido_nombre.ilike.%${q.replace(/ /g, '%')}%`);
+  const [rm, rp] = await Promise.all([ qm, sb.rpc('fichero_buscar_personal', { p_q: q }) ]);
+  const mats = rm.data || [];
+  const pers = rp.data || [];
+
+  // Personas del padrón que tienen material pero no vinieron en la búsqueda de material
+  const dnisMat = new Set(mats.map(m => m.dni));
+  const faltan = pers.filter(p => p.tiene_material && !dnisMat.has(p.dni)).map(p => p.dni);
+  if(faltan.length){
+    const { data } = await sb.from('fichero_materiales').select('*').in('dni', faltan).neq('estado','baja');
+    (data || []).forEach(m => { mats.push(m); dnisMat.add(m.dni); });
+  }
+  // Personas del padrón SIN material activo
+  const sinMat = pers.filter(p => !dnisMat.has(p.dni));
+
+  if(!mats.length && !sinMat.length){
+    $('bRes').innerHTML = `<div class="alerta wa">No se encontró a nadie con ese dato, ni en el fichero ni en el padrón.
+      <a href="#" onclick="abrirAlta();return false">Ingresar material nuevo</a></div>`;
+    return;
+  }
+  // Una sola persona sin material → mostrar el aviso directo
+  if(!mats.length && sinMat.length === 1) return mostrarSinMaterial(sinMat[0]);
+
+  window._res = mats; window._sin = sinMat;
+  $('bRes').innerHTML = mats.map((m,i) => `
+    <div class="item" onclick="elegir(window._res[${i}])">
+      <b>${esc(m.apellido_nombre)}</b>
+      <div class="meta">${esc(m.tipo)} · Cód. ${esc(m.codigo)}${m.dni?' · DNI '+esc(m.dni):''}${m.legajo_policial?' · Leg. '+esc(m.legajo_policial):''}${m.ubicacion?' · '+esc(m.ubicacion):''}</div>
+      ${m.estado==='afuera' ? '<span class="badge b-er">NO ESTÁ EN EL FICHERO</span>' : '<span class="badge b-ok">EN FICHERO</span>'}
+    </div>`).join('') + sinMat.map((p,i) => `
+    <div class="item" style="background:#f8fafc" onclick="mostrarSinMaterial(window._sin[${i}])">
+      <b style="color:var(--mu)">${esc(nombrePersona(p))}</b>
+      <div class="meta">${p.grado?esc(p.grado)+' · ':''}DNI ${esc(p.dni)}${p.legajo?' · Leg. '+esc(p.legajo):''}</div>
+      <span class="badge b-wa">NO POSEE MATERIAL ACTIVO</span>
+    </div>`).join('');
+}
+const nombrePersona = p => [p.apellido, p.nombre].filter(Boolean).join(' ');
+function mostrarSinMaterial(p){
+  show('vBuscar');
+  window._pSin = p;
+  $('bRes').innerHTML = `
+    <div class="item" style="cursor:default"><b>${esc(nombrePersona(p))}</b>
+      <div class="meta">${p.grado?esc(p.grado)+' · ':''}DNI ${esc(p.dni)}${p.legajo?' · Leg. '+esc(p.legajo):''}${p.destino?'<br>'+esc(p.destino):''}</div></div>
+    <div class="alerta wa" style="font-size:17px;text-align:center"><b>⚠️ NO POSEE MATERIAL ACTIVO</b>
+      <div style="font-size:14px;margin-top:6px">Esta persona no tiene material en el fichero.${modoBuscar==='sacar'?' No hay nada para retirar.':''}</div></div>
+    <button class="btn sec" onclick="altaDesdePersona(window._pSin)">➕ Ingresar material nuevo para esta persona</button>`;
+}
+function altaDesdePersona(p){
+  abrirAlta();
+  $('aNom').value = nombrePersona(p).toUpperCase();
+  $('aDni').value = p.dni || '';
+  $('aLeg').value = p.legajo || '';
+}
+async function autocompletarAlta(campo){
+  const v = $(campo).value.replace(/\D/g, '');
+  if(!v || $('aNom').value.trim()) return;
+  const { data } = await sb.rpc('fichero_buscar_personal', { p_q: v });
+  const p = (data || []).find(x => campo === 'aDni' ? x.dni === v : x.legajo === v);
+  if(!p) return;
+  $('aNom').value = nombrePersona(p).toUpperCase();
+  $('aDni').value = p.dni || ''; $('aLeg').value = p.legajo || '';
+  if(p.tiene_material) toast('Ojo: esta persona ya tiene material en el fichero', 1);
+}
+function fichaMaterial(m){
+  return `<div class="item" style="cursor:default"><b>${esc(m.apellido_nombre)}</b>
+    <div class="meta">${esc(m.tipo)} · Cód. ${esc(m.codigo)}${m.dni?' · DNI '+esc(m.dni):''}${m.legajo_policial?' · Leg. '+esc(m.legajo_policial):''}${m.ubicacion?' · '+esc(m.ubicacion):''}</div></div>`;
+}
+async function alertaNoEsta(m){
+  const s = (await ultimasSalidas([m.id]))[m.id];
+  if(!s) return `<div class="alerta er">⚠️ <b>NO ESTÁ EN EL FICHERO.</b></div>`;
+  const vencido = new Date(s.fecha_hora) < inicioDia(hoyISO());
+  return `<div class="alerta er">⚠️ <b>NO ESTÁ EN EL FICHERO${vencido?' — NO FUE DEVUELTO':''}</b>
+    <dl class="dl"><dt>Lo sacó</dt><dd>${esc(s.usuario_nombre)}</dd>
+    <dt>Cuándo</dt><dd>${fmt(s.fecha_hora)}</dd>
+    <dt>Destino</dt><dd>${esc(s.destino)}</dd>
+    <dt>Motivo</dt><dd>${esc(s.motivo)}${s.solicitante?' — '+esc(s.solicitante):''}</dd></dl></div>`;
+}
+
+async function elegir(m){
+  sel = m;
+  if(modoBuscar === 'devolver') return pedirDevolucion(m);
+  if(modoBuscar === 'consulta'){
+    $('bRes').innerHTML = fichaMaterial(m) + (m.estado === 'afuera'
+      ? await alertaNoEsta(m) + `<button class="btn ok" onclick="pedirDevolucion(sel)">📥 Registrar devolución</button>`
+      : `<div class="alerta ok">✅ Está en el fichero${m.ubicacion?' · '+esc(m.ubicacion):''}.</div>`);
+    return;
+  }
+  // modo sacar
+  show('vSacar');
+  $('sMat').innerHTML = fichaMaterial(m);
+  if(m.estado === 'afuera'){
+    $('sMat').innerHTML += await alertaNoEsta(m) + `<button class="btn ok" onclick="pedirDevolucion(sel)">📥 Ya volvió — registrar devolución</button>`;
+    $('sForm').classList.add('hide');
+  } else {
+    $('sForm').classList.remove('hide');
+    $('sDestino').value = ''; $('sDestOtro').value = ''; $('sDestOtro').classList.add('hide');
+    $('sSolic').value = ''; $('sObs').value = '';
+    document.querySelector('input[name=sMot]').checked = true; motivoCambio();
+  }
+}
+function motivoCambio(){
+  const v = document.querySelector('input[name=sMot]:checked').value;
+  $('sSolic').classList.toggle('hide', v !== 'A solicitud');
+}
+
+/* ---------- SALIDA ---------- */
+async function confirmarSalida(){
+  let destino = $('sDestino').value;
+  if(destino === 'Otro') destino = $('sDestOtro').value.trim();
+  if(!destino) return toast('Indicá a dónde va', 1);
+  const motivoSel = document.querySelector('input[name=sMot]:checked').value;
+  const solicitante = motivoSel === 'A solicitud' ? $('sSolic').value.trim() : null;
+  if(motivoSel === 'A solicitud' && !solicitante) return toast('Indicá quién lo solicita', 1);
+  const motivo = motivoSel === 'A solicitud' ? 'A solicitud' : motivoSel;
+
+  $('sBtn').disabled = true;
+  try{
+    // Se marca afuera solo si seguía en el fichero (evita que dos personas lo saquen a la vez)
+    const { data: upd, error: e1 } = await sb.from('fichero_materiales')
+      .update({ estado: 'afuera' }).eq('id', sel.id).eq('estado', 'en_fichero').select();
+    if(e1) throw e1;
+    if(!upd || !upd.length){ toast('Otra persona ya lo sacó', 1); sel.estado = 'afuera'; return elegir(sel); }
+    const mov = { material_id: sel.id, tipo: 'salida', usuario_id: user.id, usuario_nombre: nombreUser(),
+                  destino, motivo, solicitante, observaciones: $('sObs').value.trim() || null };
+    const { data: ins, error: e2 } = await sb.from('fichero_movimientos').insert(mov).select().single();
+    if(e2){ await sb.from('fichero_materiales').update({ estado: 'en_fichero' }).eq('id', sel.id); throw e2; }
+    ticket('📤', 'SALIDA REGISTRADA', sel, ins);
+  } catch(e){ toast('Error: ' + e.message, 1); }
+  finally{ $('sBtn').disabled = false; }
+}
+function ticket(icono, titulo, m, mov){
+  $('tBody').innerHTML = `<div class="ticket"><div class="big">${icono}</div><h2>${titulo}</h2></div>
+    ${fichaMaterial(m)}
+    <dl class="dl">
+      <dt>Fecha / hora</dt><dd>${fmt(mov.fecha_hora)}</dd>
+      <dt>${mov.tipo==='salida'?'Lo sacó':'Lo devolvió'}</dt><dd>${esc(mov.usuario_nombre)}</dd>
+      ${mov.destino?`<dt>Destino</dt><dd>${esc(mov.destino)}</dd>`:''}
+      ${mov.motivo?`<dt>Motivo</dt><dd>${esc(mov.motivo)}${mov.solicitante?' — '+esc(mov.solicitante):''}</dd>`:''}
+      ${mov.observaciones?`<dt>Obs.</dt><dd>${esc(mov.observaciones)}</dd>`:''}
+    </dl>`;
+  $('tPrint').classList.add('hide');
+  show('vTicket');
+}
+
+/* ---------- DEVOLUCIÓN ---------- */
+async function abrirDevolver(){
+  modoBuscar = 'devolver';
+  show('vDevolver');
+  $('dLista').innerHTML = '<p class="meta">Cargando…</p>';
+  const { data } = await sb.from('fichero_materiales').select('*').eq('estado','afuera').order('apellido_nombre');
+  if(!data || !data.length){ $('dLista').innerHTML = '<div class="alerta ok">✅ No hay material afuera.</div>'; return; }
+  const sal = await ultimasSalidas(data.map(d => d.id));
+  const ini = inicioDia(hoyISO());
+  window._dev = data;
+  $('dLista').innerHTML = data.map((m,i) => { const s = sal[m.id]; const venc = s && new Date(s.fecha_hora) < ini;
+    return `<div class="item" onclick="pedirDevolucion(window._dev[${i}])">
+      <b>${esc(m.apellido_nombre)}</b>
+      <div class="meta">${esc(m.tipo)} · Cód. ${esc(m.codigo)}${s?` · ${esc(s.destino)} · ${esc(s.usuario_nombre)} · ${fmt(s.fecha_hora)}`:''}</div>
+      <span class="badge ${venc?'b-er':'b-wa'}">${venc?'NO DEVUELTO (días anteriores)':'AFUERA HOY'}</span></div>`; }).join('');
+}
+async function devolverPorCodigo(t){
+  const c = limpiarCodigo(t);
+  const { data } = await sb.from('fichero_materiales').select('*').eq('codigo', c).maybeSingle();
+  if(!data) return toast('Código no registrado: ' + c, 1);
+  pedirDevolucion(data);
+}
+async function pedirDevolucion(m){
+  sel = m;
+  if(m.estado !== 'afuera') return toast('Ese material ya figura en el fichero', 1);
+  if(!confirm(`¿Registrar la devolución de:\n${m.apellido_nombre} (${m.tipo})?`)) return;
+  const { data: upd, error: e1 } = await sb.from('fichero_materiales').update({ estado: 'en_fichero' }).eq('id', m.id).eq('estado','afuera').select();
+  if(e1 || !upd || !upd.length) return toast('No se pudo registrar (¿ya fue devuelto?)', 1);
+  const { data: ins, error } = await sb.from('fichero_movimientos').insert({ material_id: m.id, tipo: 'devolucion', usuario_id: user.id, usuario_nombre: nombreUser() }).select().single();
+  if(error) return toast('Error: ' + error.message, 1);
+  ticket('📥', 'DEVUELTO AL FICHERO', m, ins);
+}
+
+/* ---------- ALTA ---------- */
+function abrirAlta(){
+  ['aCod','aNom','aDni','aLeg','aUbi','aObs'].forEach(id => $(id).value = '');
+  $('aTipo').value = 'Legajo';
+  show('vAlta');
+}
+function generarCodigo(){ return 'JM' + Date.now().toString(36).toUpperCase().slice(-6) + Math.floor(Math.random()*36).toString(36).toUpperCase(); }
+async function guardarAlta(){
+  const nom = $('aNom').value.trim().toUpperCase();
+  if(!nom) return toast('Falta apellido y nombre', 1);
+  const reg = { codigo: limpiarCodigo($('aCod').value) || generarCodigo(), apellido_nombre: nom,
+    dni: $('aDni').value.trim() || null, legajo_policial: $('aLeg').value.trim() || null,
+    tipo: $('aTipo').value, ubicacion: $('aUbi').value.trim() || null,
+    observaciones: $('aObs').value.trim() || null, created_by: nombreUser() };
+  $('aBtn').disabled = true;
+  const { data, error } = await sb.from('fichero_materiales').insert(reg).select().single();
+  $('aBtn').disabled = false;
+  if(error) return toast(error.code === '23505' ? 'Ese código ya existe' : 'Error: ' + error.message, 1);
+  await sb.from('fichero_movimientos').insert({ material_id: data.id, tipo: 'alta', usuario_id: user.id, usuario_nombre: nombreUser(), observaciones: 'Ingreso de material nuevo' });
+  etiqueta(data);
+}
+function etiqueta(m){
+  $('tBody').innerHTML = `<div class="ticket noprint"><div class="big">✅</div><h2>Material ingresado</h2><p class="meta">Pegá esta etiqueta en el sobre</p></div>
+    <div class="etiqueta"><div class="qr" id="etqQr"></div>
+      <div class="tx"><b>${esc(m.apellido_nombre)}</b><br>${esc(m.tipo)}${m.dni?'<br>DNI '+esc(m.dni):''}${m.legajo_policial?'<br>Leg. '+esc(m.legajo_policial):''}<br><b>${esc(m.codigo)}</b>${m.ubicacion?'<br>'+esc(m.ubicacion):''}<br><small>FICHERO JPRM</small></div></div>`;
+  new QRCode($('etqQr'), { text: baseURL() + '?m=' + encodeURIComponent(m.codigo), width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
+  $('tPrint').classList.remove('hide');
+  show('vTicket');
+}
+
+/* ---------- REPORTE DIARIO ---------- */
+function abrirReporte(){ $('rFecha').value = hoyISO(); show('vReporte'); cargarReporte(); }
+async function cargarReporte(){
+  const d = $('rFecha').value || hoyISO();
+  const ini = inicioDia(d), fin = new Date(ini.getTime() + 864e5);
+  $('rTit').textContent = ini.toLocaleDateString('es-AR',{timeZone:TZ,weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'});
+  const [{ data: movs }, { data: afuera }] = await Promise.all([
+    sb.from('fichero_movimientos').select('*, fichero_materiales(codigo,apellido_nombre,tipo)')
+      .gte('fecha_hora', ini.toISOString()).lt('fecha_hora', fin.toISOString()).order('fecha_hora'),
+    sb.from('fichero_materiales').select('*').eq('estado','afuera').order('apellido_nombre')
+  ]);
+  const M = movs || [], A = afuera || [];
+  const sal = await ultimasSalidas(A.map(a => a.id));
+  const hoyIni = inicioDia(hoyISO());
+  const cnt = t => M.filter(m => m.tipo === t).length;
+  $('rStats').innerHTML = `<div><b>${cnt('salida')}</b><small>Salidas</small></div><div><b>${cnt('devolucion')}</b><small>Devueltos</small></div>
+    <div><b>${cnt('alta')}</b><small>Nuevos</small></div><div style="${A.length?'background:var(--erbg);color:var(--er)':''}"><b>${A.length}</b><small>Afuera ahora</small></div>`;
+
+  let txt = `*REPORTE DIARIO FICHERO JPRM*\n${$('rTit').textContent}\nSalidas: ${cnt('salida')} · Devueltos: ${cnt('devolucion')} · Nuevos: ${cnt('alta')}\n`;
+  if(A.length){
+    txt += `\n⚠️ *NO ESTÁN EN EL FICHERO (${A.length}):*\n`;
+    $('rAlertas').innerHTML = `<div class="alerta er"><b>⚠️ ALERTA — ${A.length} legajo(s) no están en el fichero</b>` +
+      A.map(m => { const s = sal[m.id]; const venc = s && new Date(s.fecha_hora) < hoyIni;
+        txt += `• ${m.apellido_nombre} (${m.tipo}) → ${s ? `${s.destino}, lo sacó ${s.usuario_nombre} el ${fmt(s.fecha_hora)}` : 'sin datos'}${venc?' ❗NO DEVUELTO':''}\n`;
+        return `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #f5b5b5"><b>${esc(m.apellido_nombre)}</b> · ${esc(m.tipo)} ${venc?'<span class="badge b-er" style="background:#fff">NO DEVUELTO</span>':''}<br>
+          <small>${s ? `→ ${esc(s.destino)} · ${esc(s.usuario_nombre)} · ${fmt(s.fecha_hora)}${s.solicitante?' · pedido por '+esc(s.solicitante):''}` : ''}</small></div>`; }).join('') + `</div>`;
+  } else {
+    $('rAlertas').innerHTML = `<div class="alerta ok">✅ Todo el material está en el fichero.</div>`;
+    txt += `\n✅ Todo el material está en el fichero.\n`;
+  }
+  const tipoTx = { salida: '📤 Salida', devolucion: '📥 Devuelto', alta: '➕ Nuevo' };
+  $('rTabla').innerHTML = M.length
+    ? `<tr><th>Hora</th><th>Mov.</th><th>Paciente</th><th>Quién</th><th>Destino / motivo</th></tr>` + M.map(m => `<tr>
+        <td>${hora(m.fecha_hora)}</td><td>${tipoTx[m.tipo]}</td>
+        <td>${esc(m.fichero_materiales?.apellido_nombre)}<br><small style="color:var(--mu)">${esc(m.fichero_materiales?.tipo)}</small></td>
+        <td>${esc(m.usuario_nombre)}</td>
+        <td>${esc(m.destino||'')}${m.motivo?'<br><small>'+esc(m.motivo)+(m.solicitante?' — '+esc(m.solicitante):'')+'</small>':''}</td></tr>`).join('')
+    : `<tr><td style="color:var(--mu)">Sin movimientos este día.</td></tr>`;
+  ultimoReporte = txt;
+}
+function compartirWA(){ window.open('https://wa.me/?text=' + encodeURIComponent(ultimoReporte), '_blank'); }
+
+/* ---------- QR DEL FICHERO (admin) ---------- */
+function abrirQrFichero(){
+  show('vQrFichero');
+  $('qfBox').innerHTML = '';
+  new QRCode($('qfBox'), { text: baseURL(), width: 280, height: 280, correctLevel: QRCode.CorrectLevel.M });
+}
+
+/* ---------- ESCÁNER (QR y código de barras) ---------- */
+function escanear(cb){
+  $('scanModal').style.display = 'flex';
+  scanner = new Html5Qrcode('reader');
+  scanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 250, height: 200 } },
+    txt => { cerrarScan(); if(navigator.vibrate) navigator.vibrate(80); cb(txt); }, () => {})
+    .catch(e => { cerrarScan(); toast('No se pudo abrir la cámara', 1); });
+}
+function cerrarScan(){
+  $('scanModal').style.display = 'none';
+  if(scanner){ const s = scanner; scanner = null; s.stop().then(() => s.clear()).catch(() => {}); }
+}
+
+/* ================== PANEL DE ADMINISTRACIÓN ================== */
+let adminUsuarios = [], uEditId = null, movsCache = [], enAdmin = false, tabAdmin = 'personal';
+function volver(){ enAdmin ? abrirAdmin(tabAdmin) : irMenu(); }
+const ROL_TX = { admin: 'Administrador', oficial: 'Oficial', autorizado: 'Autorizado' };
+const TIPO_TX = { salida: '📤 Salida', devolucion: '📥 Devuelto', alta: '➕ Alta', baja: '🗑️ Baja', reactivacion: '♻️ Reactivado' };
+
+function abrirAdmin(tab){
+  if(!esAdmin()) return irMenu();
+  enAdmin = true;
+  show('vAdmin');
+  adminTab(tab || tabAdmin);
+}
+function adminTab(t){
+  tabAdmin = t;
+  document.querySelectorAll('#vAdmin .tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  ['personal','material','movs','otros'].forEach(x => $('tab' + x[0].toUpperCase() + x.slice(1)).classList.toggle('hide', x !== t));
+  if(t === 'personal') cargarUsuariosAdmin();
+  if(t === 'material') cargarMaterialAdmin();
+  if(t === 'movs'){
+    if(!$('vDesde').value){ const h = hoyISO(); $('vHasta').value = h; $('vDesde').value = new Date(inicioDia(h).getTime() - 6*864e5).toLocaleDateString('en-CA',{timeZone:TZ}); }
+    cargarUsuariosAdmin(true).then(cargarMovs);
+  }
+}
+
+/* ----- Personal autorizado ----- */
+async function cargarUsuariosAdmin(soloDatos){
+  const { data, error } = await sb.rpc('fichero_admin_usuarios');
+  if(error){ toast(error.message, 1); return; }
+  adminUsuarios = data || [];
+  $('vUser').innerHTML = '<option value="">Todos</option>' + adminUsuarios.map(u => `<option value="${u.id}">${esc((u.jerarquia?u.jerarquia+' ':'')+u.nombre)}</option>`).join('');
+  if(soloDatos) return;
+  $('uLista').innerHTML = adminUsuarios.map(u => `
+    <div class="item" onclick="abrirUsuario(${u.id})" style="${u.activo?'':'opacity:.55'}">
+      <b>${esc((u.jerarquia?u.jerarquia+' ':'') + u.nombre)}</b>
+      <div class="meta">Usuario: <b style="display:inline">${esc(u.usuario)}</b>${u.dni?' · DNI '+esc(u.dni):''}${u.legajo?' · Leg. '+esc(u.legajo):''}
+        · Último ingreso: ${u.ultimo_acceso ? fmt(u.ultimo_acceso) : 'nunca'}</div>
+      <span class="badge ${u.rol==='admin'?'b-az':'b-ok'}">${ROL_TX[u.rol]}</span>
+      ${!u.activo ? '<span class="badge b-mu">INACTIVO</span>' : ''}
+      ${u.bloqueado ? '<span class="badge b-er">BLOQUEADO (intentos)</span>' : ''}
+      ${u.debe_cambiar && u.activo ? '<span class="badge b-wa">Debe cambiar la clave</span>' : ''}
+    </div>`).join('') || '<p class="meta">No hay personal cargado.</p>';
+}
+function claveTemporal(){ return String(Math.floor(100000 + Math.random()*900000)); }
+function abrirUsuario(id){
+  uEditId = id;
+  const u = id ? adminUsuarios.find(x => x.id === id) : null;
+  $('uTit').textContent = u ? '✏️ Editar personal autorizado' : '➕ Agregar personal autorizado';
+  $('uBuscarBox').classList.toggle('hide', !!u);
+  $('uPassBox').classList.toggle('hide', !!u);
+  $('uActBox').classList.toggle('hide', !u);
+  $('uReset').classList.toggle('hide', !u);
+  $('uQ').value = ''; $('uRes').innerHTML = '';
+  $('uNom').value = u ? u.nombre : ''; $('uJer').value = u ? (u.jerarquia || '') : '';
+  $('uDni').value = u ? (u.dni || '') : ''; $('uLeg').value = u ? (u.legajo || '') : '';
+  $('uUsu').value = u ? u.usuario : ''; $('uRol').value = u ? u.rol : 'autorizado';
+  $('uAct').checked = u ? u.activo : true;
+  $('uPass').value = u ? '' : claveTemporal();
+  show('vUsuario');
+  if(!u) setTimeout(() => $('uQ').focus(), 100);
+}
+async function buscarPadronUsuario(){
+  const q = $('uQ').value.trim(); if(!q) return;
+  const { data, error } = await sb.rpc('fichero_buscar_personal', { p_q: q });
+  if(error) return toast(error.message, 1);
+  window._pad = data || [];
+  $('uRes').innerHTML = window._pad.length ? window._pad.map((p,i) => {
+    const ya = adminUsuarios.some(u => u.dni && u.dni === p.dni);
+    return `<div class="item" onclick="${ya ? "toast('Esa persona ya está cargada',1)" : `elegirPadron(window._pad[${i}])`}">
+      <b>${esc(p.apellido + ' ' + p.nombre)}</b>
+      <div class="meta">${esc(p.grado||'')} · DNI ${esc(p.dni)} · Leg. ${esc(p.legajo||'')}${p.destino?'<br>'+esc(p.destino):''}</div>
+      ${ya ? '<span class="badge b-mu">YA ES AUTORIZADO</span>' : ''}</div>`; }).join('')
+    : '<div class="alerta wa">No está en el padrón. Podés cargarla a mano abajo.</div>';
+}
+function elegirPadron(p){
+  $('uNom').value = (p.apellido + ' ' + p.nombre).toUpperCase();
+  $('uJer').value = p.grado || ''; $('uDni').value = p.dni || ''; $('uLeg').value = p.legajo || '';
+  $('uUsu').value = p.dni || '';
+  $('uRes').innerHTML = `<div class="alerta ok">✅ ${esc(p.apellido + ' ' + p.nombre)} — completá el rol y guardá.</div>`;
+}
+async function guardarUsuario(){
+  const args = { p_id: uEditId, p_nombre: $('uNom').value, p_jerarquia: $('uJer').value, p_dni: $('uDni').value.replace(/\D/g,''),
+    p_legajo: $('uLeg').value.trim(), p_usuario: $('uUsu').value, p_rol: $('uRol').value,
+    p_activo: uEditId ? $('uAct').checked : true, p_pass: uEditId ? null : $('uPass').value.trim() };
+  if(!args.p_nombre.trim()) return toast('Falta el nombre', 1);
+  if(!args.p_usuario.trim()) return toast('Falta el usuario', 1);
+  if(!uEditId && args.p_pass.length < 6) return toast('La contraseña inicial tiene que tener al menos 6 caracteres', 1);
+  $('uBtn').disabled = true;
+  const { error } = await sb.rpc('fichero_admin_guardar_usuario', args);
+  $('uBtn').disabled = false;
+  if(error) return toast(error.message, 1);
+  if(uEditId){ toast('✅ Cambios guardados'); return abrirAdmin('personal'); }
+  mostrarCredenciales(args.p_nombre.toUpperCase(), args.p_usuario.trim().toLowerCase(), args.p_pass, true);
+}
+async function blanquearClave(){
+  const u = adminUsuarios.find(x => x.id === uEditId); if(!u) return;
+  if(!confirm(`¿Blanquear la contraseña de ${u.nombre}?\nSe le va a generar una clave nueva y se le cierran las sesiones abiertas.`)) return;
+  const nueva = claveTemporal();
+  const { error } = await sb.rpc('fichero_admin_reset_pass', { p_id: u.id, p_pass: nueva });
+  if(error) return toast(error.message, 1);
+  mostrarCredenciales(u.nombre, u.usuario, nueva, false);
+}
+function mostrarCredenciales(nombre, usuario, pass, nuevo){
+  $('cBody').innerHTML = `<div class="big">${nuevo ? '✅' : '🔑'}</div>
+    <h2>${nuevo ? 'Personal autorizado agregado' : 'Contraseña blanqueada'}</h2>
+    <p style="font-size:16px;font-weight:700;margin:4px 0 14px">${esc(nombre)}</p>
+    <div class="alerta ok" style="text-align:center">Usuario<br><span class="cred">${esc(usuario)}</span></div>
+    <div class="alerta wa" style="text-align:center">Contraseña inicial<br><span class="cred">${esc(pass)}</span></div>
+    <p style="font-size:14px;margin-top:14px">Escaneá el QR del fichero, ingresá con estos datos y elegí tu propia contraseña.</p>
+    <p class="meta" style="color:var(--mu);font-size:12px">Anotalo o imprimilo ahora: la contraseña no se vuelve a mostrar.</p>`;
+  show('vCred');
+}
+
+/* ----- Material (todo) ----- */
+async function contar(estado){
+  let q = sb.from('fichero_materiales').select('id', { count: 'exact', head: true });
+  if(estado) q = q.eq('estado', estado);
+  const { count } = await q; return count || 0;
+}
+async function cargarMaterialAdmin(){
+  const [tot, en, af, ba] = await Promise.all([contar(), contar('en_fichero'), contar('afuera'), contar('baja')]);
+  $('mStats').innerHTML = `<div><b>${tot}</b><small>Total</small></div><div><b>${en}</b><small>En fichero</small></div>
+    <div style="${af?'background:var(--erbg);color:var(--er)':''}"><b>${af}</b><small>Afuera</small></div><div><b>${ba}</b><small>De baja</small></div>`;
+  let q = sb.from('fichero_materiales').select('*').order('apellido_nombre').limit(100);
+  const est = $('mEst').value; if(est) q = q.eq('estado', est);
+  const t = $('mQ').value.replace(/[,()*%]/g, ' ').replace(/\s+/g, ' ').trim();
+  if(t){ const n = /^[0-9.]+$/.test(t) ? t.replace(/\./g,'') : null;
+    q = n ? q.or(`codigo.eq.${n},dni.eq.${n},legajo_policial.eq.${n}`) : q.or(`codigo.eq.${t},apellido_nombre.ilike.%${t.replace(/ /g,'%')}%`); }
+  const { data, error } = await q;
+  if(error) return toast(error.message, 1);
+  window._mat = data || [];
+  const badge = { en_fichero: '<span class="badge b-ok">EN FICHERO</span>', afuera: '<span class="badge b-er">AFUERA</span>', baja: '<span class="badge b-mu">DE BAJA</span>' };
+  $('mLista').innerHTML = (window._mat.length === 100 ? '<p class="meta" style="color:var(--mu);font-size:13px">Mostrando los primeros 100. Usá el buscador para encontrar uno puntual.</p>' : '') +
+    window._mat.map((m,i) => `<div class="item" style="cursor:default">
+      <b>${esc(m.apellido_nombre)}</b>
+      <div class="meta">${esc(m.tipo)} · Cód. ${esc(m.codigo)}${m.dni?' · DNI '+esc(m.dni):''}${m.legajo_policial?' · Leg. '+esc(m.legajo_policial):''}${m.ubicacion?' · '+esc(m.ubicacion):''}</div>
+      ${badge[m.estado] || ''}<br>
+      <button class="btn sec chico" onclick="historialMaterial(window._mat[${i}])">📜 Historial</button>
+      <button class="btn sec chico" onclick="etiqueta(window._mat[${i}])">🏷️ Etiqueta QR</button>
+      ${m.estado === 'en_fichero' ? `<button class="btn er chico" onclick="cambiarEstadoMat(window._mat[${i}],'baja')">🗑️ Dar de baja</button>` : ''}
+      ${m.estado === 'baja' ? `<button class="btn ok chico" onclick="cambiarEstadoMat(window._mat[${i}],'en_fichero')">♻️ Reactivar</button>` : ''}
+      <div id="hist_${m.id}"></div></div>`).join('') || '<p class="meta">Sin resultados.</p>';
+}
+async function cambiarEstadoMat(m, nuevo){
+  const baja = nuevo === 'baja';
+  const motivo = prompt(baja ? `Motivo de la baja de ${m.apellido_nombre}:` : `¿Reactivar ${m.apellido_nombre}? (observación opcional)`, '');
+  if(motivo === null) return;
+  const { data, error } = await sb.from('fichero_materiales').update({ estado: nuevo }).eq('id', m.id).eq('estado', m.estado).select();
+  if(error) return toast(error.message, 1);
+  if(!data || !data.length) return toast('El material cambió de estado mientras tanto, actualizá', 1);
+  await sb.from('fichero_movimientos').insert({ material_id: m.id, tipo: baja ? 'baja' : 'reactivacion', usuario_id: user.id,
+    usuario_nombre: nombreUser(), observaciones: motivo.trim() || null });
+  toast(baja ? 'Material dado de baja' : 'Material reactivado');
+  cargarMaterialAdmin();
+}
+async function historialMaterial(m){
+  const box = $('hist_' + m.id); if(box.innerHTML){ box.innerHTML = ''; return; }
+  const { data } = await sb.from('fichero_movimientos').select('*').eq('material_id', m.id).order('fecha_hora', { ascending: false });
+  box.innerHTML = '<table style="margin-top:8px">' + (data || []).map(v => `<tr><td>${fmt(v.fecha_hora)}</td><td>${TIPO_TX[v.tipo]||v.tipo}</td>
+    <td>${esc(v.usuario_nombre||'')}</td><td>${esc(v.destino||'')}${v.motivo?' · '+esc(v.motivo):''}${v.solicitante?' — '+esc(v.solicitante):''}${v.observaciones?'<br><small>'+esc(v.observaciones)+'</small>':''}</td></tr>`).join('') + '</table>';
+}
+
+/* ----- Movimientos (historial completo) ----- */
+async function cargarMovs(){
+  const d = $('vDesde').value || hoyISO(), h = $('vHasta').value || hoyISO();
+  let q = sb.from('fichero_movimientos').select('*, fichero_materiales(codigo,apellido_nombre,tipo,dni)')
+    .gte('fecha_hora', inicioDia(d).toISOString()).lt('fecha_hora', new Date(inicioDia(h).getTime() + 864e5).toISOString())
+    .order('fecha_hora', { ascending: false }).limit(1000);
+  if($('vUser').value) q = q.eq('usuario_id', +$('vUser').value);
+  if($('vTipo').value) q = q.eq('tipo', $('vTipo').value);
+  const { data, error } = await q;
+  if(error) return toast(error.message, 1);
+  movsCache = data || [];
+  $('vInfo').textContent = `${movsCache.length} movimiento(s)${movsCache.length === 1000 ? ' (máximo 1000; acotá las fechas)' : ''}`;
+  $('vTabla').innerHTML = movsCache.length ? `<tr><th>Fecha</th><th>Mov.</th><th>Paciente</th><th>Quién</th><th>Destino / motivo</th></tr>` +
+    movsCache.map(v => `<tr><td>${fmt(v.fecha_hora)}</td><td>${TIPO_TX[v.tipo]||v.tipo}</td>
+      <td>${esc(v.fichero_materiales?.apellido_nombre)}<br><small style="color:var(--mu)">${esc(v.fichero_materiales?.codigo)}</small></td>
+      <td>${esc(v.usuario_nombre||'')}</td>
+      <td>${esc(v.destino||'')}${v.motivo?'<br><small>'+esc(v.motivo)+(v.solicitante?' — '+esc(v.solicitante):'')+'</small>':''}${v.observaciones?'<br><small>'+esc(v.observaciones)+'</small>':''}</td></tr>`).join('')
+    : '<tr><td style="color:var(--mu)">Sin movimientos en ese período.</td></tr>';
+}
+function descargarMovs(){
+  if(!movsCache.length) return toast('No hay movimientos para descargar', 1);
+  const col = ['Fecha y hora','Movimiento','Paciente','Código','DNI','Tipo de material','Quién','Destino','Motivo','Solicitante','Observaciones'];
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const filas = movsCache.map(v => [new Date(v.fecha_hora).toLocaleString('es-AR',{timeZone:TZ}), v.tipo, v.fichero_materiales?.apellido_nombre,
+    v.fichero_materiales?.codigo, v.fichero_materiales?.dni, v.fichero_materiales?.tipo, v.usuario_nombre, v.destino, v.motivo, v.solicitante, v.observaciones].map(q).join(';'));
+  const blob = new Blob(['﻿' + [col.map(q).join(';'), ...filas].join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `movimientos_fichero_${$('vDesde').value}_a_${$('vHasta').value}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---------- INICIO ---------- */
+(async () => {
+  const ses = lsGet('fichero_sesion');
+  $('lUsuario').value = lsGet('fichero_ultimo_usuario') || '';
+  if(ses && ses.token && ses.exp > Date.now()){
+    sb = crearCliente(ses.token); user = ses.user;
+    const yo = await sesionViva(); if(!yo) return;
+    user = { id: yo.id, nombre: yo.nombre, jerarquia: yo.jerarquia, rol: yo.rol };
+    if(yo.debe_cambiar) return abrirCambioPass(true);
+    return entrar();
+  }
+  lsSet('fichero_sesion', null);
+  show('vLogin');
+})();
+</script>
+</body>
+</html>
