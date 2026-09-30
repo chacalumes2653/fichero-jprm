@@ -192,8 +192,13 @@ th{color:var(--mu);font-size:12px}
   <button class="btn sec volver-top noprint" onclick="irMenu()">← Volver</button>
   <div class="card">
     <h2>📥 Devolver material</h2>
-    <button class="btn sec" style="margin-top:0" onclick="escanear(t=>devolverPorCodigo(t))">📷 Escanear el sobre</button>
-    <label>Material que está afuera</label>
+    <div class="grid">
+      <button class="tile" onclick="escanear(t=>devolverPorCodigo(t))"><span>📷</span>Escanear el sobre</button>
+      <button class="tile" onclick="$('dQ').focus();$('dQ').scrollIntoView({block:'center'})"><span>⌨️</span>Devolver sin escanear</button>
+    </div>
+    <label>Buscar entre lo que está afuera (apellido, DNI, legajo o código)</label>
+    <input id="dQ" placeholder="Escribí para filtrar…" oninput="renderDevolver()" onkeydown="if(event.key==='Enter')devolverEnter()">
+    <label>Material que está afuera <span id="dCant"></span></label>
     <div id="dLista"></div>
   </div>
 </section>
@@ -683,17 +688,38 @@ function ticket(icono, titulo, m, mov){
 async function abrirDevolver(){
   modoBuscar = 'devolver';
   show('vDevolver');
+  $('dQ').value = ''; $('dCant').textContent = '';
   $('dLista').innerHTML = '<p class="meta">Cargando…</p>';
   const { data } = await sb.from('fichero_materiales').select('*').eq('estado','afuera').order('apellido_nombre');
-  if(!data || !data.length){ $('dLista').innerHTML = '<div class="alerta ok">✅ No hay material afuera.</div>'; return; }
-  const sal = await ultimasSalidas(data.map(d => d.id));
-  const ini = inicioDia(hoyISO());
-  window._dev = data;
-  $('dLista').innerHTML = data.map((m,i) => { const s = sal[m.id]; const venc = s && new Date(s.fecha_hora) < ini;
+  window._dev = data || [];
+  window._devSal = window._dev.length ? await ultimasSalidas(window._dev.map(d => d.id)) : {};
+  renderDevolver();
+}
+function filtrarDevolver(){
+  const q = $('dQ').value.trim().toUpperCase().replace(/\./g, '');
+  if(!q) return window._dev.map((m,i) => i);
+  const pal = q.split(/\s+/);
+  return window._dev.map((m,i) => i).filter(i => { const m = window._dev[i];
+    const txt = [m.apellido_nombre, m.dni, m.legajo_policial, m.codigo].join(' ').toUpperCase();
+    return pal.every(w => txt.includes(w)); });
+}
+function renderDevolver(){
+  if(!window._dev.length){ $('dLista').innerHTML = '<div class="alerta ok">✅ No hay material afuera.</div>'; return; }
+  const idx = filtrarDevolver(), ini = inicioDia(hoyISO());
+  $('dCant').textContent = `(${idx.length}${idx.length !== window._dev.length ? ' de ' + window._dev.length : ''})`;
+  $('dLista').innerHTML = idx.map(i => { const m = window._dev[i], s = window._devSal[m.id]; const venc = s && new Date(s.fecha_hora) < ini;
     return `<div class="item" onclick="pedirDevolucion(window._dev[${i}])">
       <b>${esc(m.apellido_nombre)}</b>
-      <div class="meta">${esc(m.tipo)} · Cód. ${esc(m.codigo)}${s?` · ${esc(s.destino)} · ${esc(s.usuario_nombre)} · ${fmt(s.fecha_hora)}`:''}</div>
-      <span class="badge ${venc?'b-er':'b-wa'}">${venc?'NO DEVUELTO (días anteriores)':'AFUERA HOY'}</span></div>`; }).join('');
+      <div class="meta">${esc(m.tipo)} · Cód. ${esc(m.codigo)}${m.dni&&m.dni!==m.codigo?' · DNI '+esc(m.dni):''}${m.legajo_policial?' · Leg. '+esc(m.legajo_policial):''}${s?`<br>${esc(s.destino)} · ${esc(s.usuario_nombre)} · ${fmt(s.fecha_hora)}`:''}</div>
+      <span class="badge ${venc?'b-er':'b-wa'}">${venc?'NO DEVUELTO (días anteriores)':'AFUERA HOY'}</span>
+      <span class="badge b-ok" style="float:right">📥 Tocar para devolver</span></div>`; }).join('')
+    || '<div class="alerta wa">Nadie con ese dato figura con material afuera.</div>';
+}
+function devolverEnter(){
+  const idx = filtrarDevolver();
+  if(idx.length === 1) return pedirDevolucion(window._dev[idx[0]]);
+  if(!idx.length) return toast('Nadie con ese dato figura con material afuera', 1);
+  toast('Hay varios: tocá el que corresponde', 1);
 }
 async function devolverPorCodigo(t){
   const c = limpiarCodigo(t);
