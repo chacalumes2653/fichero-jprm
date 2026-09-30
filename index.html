@@ -67,6 +67,10 @@ th{color:var(--mu);font-size:12px}
 .btn.chico{display:inline-block;width:auto;padding:7px 12px;font-size:13px;margin:6px 6px 0 0;border-radius:9px}
 .b-mu{background:#e2e8f0;color:#475569}
 .b-az{background:#dbeafe;color:#1e40af}
+.volver-top{position:sticky;top:58px;z-index:4;margin:0 0 12px;padding:11px;font-size:15px;box-shadow:0 2px 6px #0002}
+.pw{position:relative}
+.pw input{padding-right:50px}
+.pw .ojo{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;font-size:20px;padding:8px;cursor:pointer;line-height:1}
 .cred{font-family:ui-monospace,Consolas,monospace;font-size:22px;font-weight:700;letter-spacing:1px}
 .pindots{text-align:center;font-size:28px;letter-spacing:10px;min-height:40px;margin-top:8px}
 .etiqueta{border:2px dashed var(--bd);border-radius:12px;padding:14px;display:flex;gap:14px;align-items:center}
@@ -109,6 +113,7 @@ th{color:var(--mu);font-size:12px}
 
 <!-- ============ CAMBIAR CONTRASEÑA ============ -->
 <section class="view hide" id="vPass">
+  <button class="btn sec volver-top noprint" id="pVolver" onclick="irMenu()">← Volver</button>
   <div class="card">
     <h2>🔑 Cambiar contraseña</h2>
     <div id="pAviso" class="alerta wa hide" style="margin-top:0">Es tu primer ingreso (o te blanquearon la clave): elegí una contraseña propia.</div>
@@ -120,7 +125,6 @@ th{color:var(--mu);font-size:12px}
     <input id="pRep" type="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')cambiarPass()">
     <button class="btn ok" id="pBtn" onclick="cambiarPass()">Guardar contraseña</button>
   </div>
-  <button class="btn sec" id="pVolver" onclick="irMenu()">← Volver</button>
 </section>
 
 <!-- ============ MENÚ ============ -->
@@ -138,6 +142,7 @@ th{color:var(--mu);font-size:12px}
 
 <!-- ============ BUSCAR ============ -->
 <section class="view hide" id="vBuscar">
+  <button class="btn sec volver-top noprint" onclick="irMenu()">← Volver</button>
   <div class="card">
     <h2 id="bTitulo">Buscar material</h2>
     <div class="row">
@@ -149,11 +154,11 @@ th{color:var(--mu);font-size:12px}
     </div>
     <div id="bRes"></div>
   </div>
-  <button class="btn sec" onclick="irMenu()">← Volver</button>
 </section>
 
 <!-- ============ SACAR (formulario) ============ -->
 <section class="view hide" id="vSacar">
+  <button class="btn sec volver-top noprint" onclick="abrirBuscar('sacar')">← Volver</button>
   <div class="card">
     <h2>📤 Sacar material</h2>
     <div id="sMat"></div>
@@ -180,22 +185,22 @@ th{color:var(--mu);font-size:12px}
       <button class="btn" id="sBtn" onclick="confirmarSalida()">Registrar salida</button>
     </div>
   </div>
-  <button class="btn sec" onclick="abrirBuscar('sacar')">← Volver</button>
 </section>
 
 <!-- ============ DEVOLVER ============ -->
 <section class="view hide" id="vDevolver">
+  <button class="btn sec volver-top noprint" onclick="irMenu()">← Volver</button>
   <div class="card">
     <h2>📥 Devolver material</h2>
     <button class="btn sec" style="margin-top:0" onclick="escanear(t=>devolverPorCodigo(t))">📷 Escanear el sobre</button>
     <label>Material que está afuera</label>
     <div id="dLista"></div>
   </div>
-  <button class="btn sec" onclick="irMenu()">← Volver</button>
 </section>
 
 <!-- ============ ALTA ============ -->
 <section class="view hide" id="vAlta">
+  <button class="btn sec volver-top noprint" onclick="irMenu()">← Volver</button>
   <div class="card">
     <h2>➕ Ingresar material nuevo</h2>
     <label>Código (si el sobre ya tiene etiqueta, escanealo; si no, se genera solo)</label>
@@ -217,7 +222,6 @@ th{color:var(--mu);font-size:12px}
     <textarea id="aObs"></textarea>
     <button class="btn ok" id="aBtn" onclick="guardarAlta()">Guardar e imprimir etiqueta</button>
   </div>
-  <button class="btn sec" onclick="irMenu()">← Volver</button>
 </section>
 
 <!-- ============ TICKET / ETIQUETA ============ -->
@@ -231,6 +235,7 @@ th{color:var(--mu);font-size:12px}
 
 <!-- ============ REPORTE ============ -->
 <section class="view hide" id="vReporte">
+  <button class="btn sec volver-top noprint" onclick="volver()">← Volver</button>
   <div class="card">
     <div class="row noprint" style="align-items:end">
       <div><label style="margin-top:0">Fecha</label><input type="date" id="rFecha" onchange="cargarReporte()"></div>
@@ -246,12 +251,12 @@ th{color:var(--mu);font-size:12px}
       <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
       <button class="btn ok" onclick="compartirWA()">WhatsApp</button>
     </div>
-    <button class="btn sec" onclick="volver()">← Volver</button>
   </div>
 </section>
 
 <!-- ============ QR FICHERO ============ -->
 <section class="view hide" id="vQrFichero">
+  <button class="btn sec volver-top noprint" onclick="volver()">← Volver</button>
   <div class="card ticket">
     <h2>FICHERO · JUNTA MÉDICA</h2>
     <div id="qfBox" style="display:flex;justify-content:center;margin:14px 0"></div>
@@ -260,12 +265,12 @@ th{color:var(--mu);font-size:12px}
   </div>
   <div class="noprint">
     <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
-    <button class="btn sec" onclick="volver()">← Volver</button>
   </div>
 </section>
 
 <!-- ============ PANEL ADMIN ============ -->
 <section class="view hide" id="vAdmin">
+  <button class="btn sec volver-top noprint" onclick="irMenu()">← Volver al menú</button>
   <div class="card">
     <h2>⚙️ Panel de administración</h2>
     <div class="tabs">
@@ -314,11 +319,11 @@ th{color:var(--mu);font-size:12px}
       <button class="btn sec" onclick="abrirQrFichero()">🖨️ QR del fichero (para imprimir y pegar)</button>
     </div>
   </div>
-  <button class="btn sec" onclick="irMenu()">← Volver al menú</button>
 </section>
 
 <!-- ============ ADMIN: ALTA / EDICIÓN DE PERSONAL ============ -->
 <section class="view hide" id="vUsuario">
+  <button class="btn sec volver-top noprint" onclick="abrirAdmin('personal')">← Volver al panel</button>
   <div class="card">
     <h2 id="uTit">➕ Agregar personal autorizado</h2>
     <div id="uBuscarBox">
@@ -345,9 +350,9 @@ th{color:var(--mu);font-size:12px}
     </div>
     <label class="radio hide" id="uActBox"><input type="checkbox" id="uAct"> Activo (puede ingresar)</label>
     <button class="btn ok" id="uBtn" onclick="guardarUsuario()">Guardar</button>
-    <button class="btn er hide" id="uReset" onclick="blanquearClave()">🔑 Blanquear contraseña</button>
+    <button class="btn sec hide" id="uReset" onclick="blanquearClave()">🔑 Blanquear contraseña</button>
+    <button class="btn er hide" id="uDel" onclick="eliminarUsuario(uEditId)">🗑️ Eliminar usuario</button>
   </div>
-  <button class="btn sec" onclick="abrirAdmin('personal')">← Volver al panel</button>
 </section>
 
 <!-- ============ ADMIN: CREDENCIALES PARA ENTREGAR ============ -->
@@ -433,6 +438,7 @@ async function salir(msg){
   lsSet('fichero_sesion', null); user = null; sb = crearCliente(null);
   $('btnSalir').classList.add('hide'); $('hdrUser').textContent = 'Control de material de pacientes';
   $('lUsuario').value = lsGet('fichero_ultimo_usuario') || '';
+  ocultarClaves();
   show('vLogin');
   if(typeof msg === 'string') toast(msg, 1);
 }
@@ -446,6 +452,7 @@ function nombreUser(){ return (user.jerarquia ? user.jerarquia + ' ' : '') + use
 const esAdmin = () => user && user.rol === 'admin';
 
 function abrirCambioPass(obligatorio){
+  ocultarClaves();
   ['pAct','pNue','pRep'].forEach(id => $(id).value = '');
   $('pAviso').classList.toggle('hide', !obligatorio);
   $('pVolver').classList.toggle('hide', !!obligatorio);
@@ -837,6 +844,8 @@ async function cargarUsuariosAdmin(soloDatos){
       ${!u.activo ? '<span class="badge b-mu">INACTIVO</span>' : ''}
       ${u.bloqueado ? '<span class="badge b-er">BLOQUEADO (intentos)</span>' : ''}
       ${u.debe_cambiar && u.activo ? '<span class="badge b-wa">Debe cambiar la clave</span>' : ''}
+      <div><button class="btn sec chico" onclick="event.stopPropagation();abrirUsuario(${u.id})">✏️ Editar</button>${u.id !== user.id
+        ? `<button class="btn er chico" onclick="event.stopPropagation();eliminarUsuario(${u.id})">🗑️ Eliminar</button>` : ''}</div>
     </div>`).join('') || '<p class="meta">No hay personal cargado.</p>';
 }
 function claveTemporal(){ return String(Math.floor(100000 + Math.random()*900000)); }
@@ -848,6 +857,7 @@ function abrirUsuario(id){
   $('uPassBox').classList.toggle('hide', !!u);
   $('uActBox').classList.toggle('hide', !u);
   $('uReset').classList.toggle('hide', !u);
+  $('uDel').classList.toggle('hide', !u || u.id === user.id);
   $('uQ').value = ''; $('uRes').innerHTML = '';
   $('uNom').value = u ? u.nombre : ''; $('uJer').value = u ? (u.jerarquia || '') : '';
   $('uDni').value = u ? (u.dni || '') : ''; $('uLeg').value = u ? (u.legajo || '') : '';
@@ -889,6 +899,14 @@ async function guardarUsuario(){
   if(error) return toast(error.message, 1);
   if(uEditId){ toast('✅ Cambios guardados'); return abrirAdmin('personal'); }
   mostrarCredenciales(args.p_nombre.toUpperCase(), args.p_usuario.trim().toLowerCase(), args.p_pass, true);
+}
+async function eliminarUsuario(id){
+  const u = adminUsuarios.find(x => x.id === id); if(!u) return;
+  if(!confirm(`¿ELIMINAR a ${u.nombre} (usuario ${u.usuario})?\n\nYa no va a poder ingresar. Los movimientos que registró quedan en el historial con su nombre.\n\nEsto no se puede deshacer.`)) return;
+  const { error } = await sb.rpc('fichero_admin_eliminar_usuario', { p_id: id });
+  if(error) return toast(error.message, 1);
+  toast('Usuario eliminado');
+  abrirAdmin('personal');
 }
 async function blanquearClave(){
   const u = adminUsuarios.find(x => x.id === uEditId); if(!u) return;
@@ -989,7 +1007,22 @@ function descargarMovs(){
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
+/* ---------- Ojito para ver la contraseña ---------- */
+function armarOjitos(){
+  document.querySelectorAll('input[type=password]').forEach(inp => {
+    if(inp.parentNode.classList.contains('pw')) return;
+    const w = document.createElement('div'); w.className = 'pw';
+    inp.parentNode.insertBefore(w, inp); w.appendChild(inp);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'ojo'; b.textContent = '👁️';
+    b.title = 'Mostrar / ocultar contraseña'; b.setAttribute('aria-label', 'Mostrar u ocultar contraseña');
+    b.onclick = () => { const ver = inp.type === 'password'; inp.type = ver ? 'text' : 'password'; b.textContent = ver ? '🙈' : '👁️'; inp.focus(); };
+    w.appendChild(b);
+  });
+}
+function ocultarClaves(){ document.querySelectorAll('.pw input').forEach(i => i.type = 'password'); document.querySelectorAll('.pw .ojo').forEach(b => b.textContent = '👁️'); }
+
 /* ---------- INICIO ---------- */
+armarOjitos();
 (async () => {
   const ses = lsGet('fichero_sesion');
   $('lUsuario').value = lsGet('fichero_ultimo_usuario') || '';
