@@ -77,6 +77,15 @@ th{color:var(--mu);font-size:12px}
 .etiqueta .qr img,.etiqueta .qr canvas{width:120px;height:120px}
 .etiqueta .tx{font-size:14px}
 .etiqueta .tx b{font-size:16px}
+.b-in{background:#e0e7ff;color:#3730a3}
+.alerta.in{background:#eef2ff;color:#1e3a8a;border:2px solid #6366f1}
+.ancho{display:flex;align-items:center;gap:12px;text-align:left;background:var(--card);color:var(--az);border:0;border-radius:16px;padding:16px;font-size:15px;font-weight:700;box-shadow:0 1px 3px #0002;cursor:pointer;width:100%;margin-top:12px}
+.ancho span{font-size:26px}
+.ancho small{display:block;font-weight:500;color:var(--mu);font-size:12px;margin-top:2px}
+.mov .cab{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mov .cab .hr{font-weight:700;font-size:14px;white-space:nowrap}
+.mov .det{font-size:13px;margin-top:4px}
+.testigo{border:2px solid var(--tx);border-radius:12px;padding:14px;margin-top:14px;text-align:center;font-size:17px}
 .hide{display:none!important}
 @media print{
   header,.noprint,#toast{display:none!important}
@@ -136,6 +145,8 @@ th{color:var(--mu);font-size:12px}
     <button class="tile" onclick="abrirAlta()"><span>➕</span>Ingresar material nuevo</button>
     <button class="tile" onclick="abrirBuscar('consulta')"><span>🔎</span>¿Dónde está un legajo?</button>
   </div>
+  <button class="ancho" onclick="abrirMovs()"><span>📜</span><div>Movimientos del fichero<small>Quién retiró o devolvió cada material, a qué hora y a dónde fue</small></div></button>
+  <button class="ancho hide" id="btnEgreso" onclick="abrirBuscar('egreso')"><span>🗃️</span><div>Egreso definitivo del fichero<small>Alta, baja, retiro u otra causa: registra a qué archivo pasa el sobre</small></div></button>
   <button class="btn hide" id="btnAdmin" style="background:var(--az)" onclick="abrirAdmin()">⚙️ Panel de administración</button>
   <button class="btn sec" onclick="abrirCambioPass(false)">🔑 Cambiar mi contraseña</button>
 </section>
@@ -184,6 +195,65 @@ th{color:var(--mu);font-size:12px}
       <textarea id="sObs"></textarea>
       <button class="btn" id="sBtn" onclick="confirmarSalida()">Registrar salida</button>
     </div>
+  </div>
+</section>
+
+<!-- ============ EGRESO DEFINITIVO ============ -->
+<section class="view hide" id="vEgreso">
+  <button class="btn sec volver-top noprint" onclick="volverEgreso()">← Volver</button>
+  <div class="card">
+    <h2>🗃️ Egreso definitivo del fichero</h2>
+    <p class="meta" style="color:var(--mu);font-size:13px;margin:-6px 0 4px">El sobre sale de este fichero y no vuelve. Queda registrado a dónde pasó, así cualquiera lo encuentra después buscándolo por apellido, DNI o legajo.</p>
+    <div id="eMat"></div>
+    <label>Motivo *</label>
+    <select id="eMot" onchange="$('eMotOtro').classList.toggle('hide',this.value!=='Otra circunstancia')">
+      <option value="">— Elegir —</option>
+      <option>Alta — vuelve a servicio ordinario</option>
+      <option>Baja</option>
+      <option>Retiro</option>
+      <option>Fallecimiento</option>
+      <option>Pase a otra dependencia</option>
+      <option>Otra circunstancia</option>
+    </select>
+    <input id="eMotOtro" class="hide" style="margin-top:8px" placeholder="Especificar la circunstancia">
+    <label>¿A dónde pasa el sobre? *</label>
+    <input id="eDest" list="eDestList" placeholder="Ej: Archivo de egresados, Div. Retiros…" autocomplete="off">
+    <datalist id="eDestList"></datalist>
+    <label>Ubicación exacta en el nuevo lugar (opcional)</label>
+    <input id="eUbi" placeholder="Ej: Caja 12 · Estante 3">
+    <label>Expediente / nota Nº (opcional)</label>
+    <input id="eExp" placeholder="Ej: 1234/2026">
+    <label>Observaciones (opcional)</label>
+    <textarea id="eObs"></textarea>
+    <button class="btn er" id="eBtn" onclick="confirmarEgreso()">Registrar egreso</button>
+  </div>
+</section>
+
+<!-- ============ MOVIMIENTOS (todos los usuarios) ============ -->
+<section class="view hide" id="vMovs">
+  <button class="btn sec volver-top noprint" onclick="volver()">← Volver</button>
+  <div class="card">
+    <h2>📜 Movimientos del fichero</h2>
+    <div class="tabs" id="mvRango">
+      <button data-r="hoy" onclick="rangoMovs('hoy')">Hoy</button>
+      <button data-r="ayer" onclick="rangoMovs('ayer')">Ayer</button>
+      <button data-r="7" onclick="rangoMovs('7')">7 días</button>
+      <button data-r="30" onclick="rangoMovs('30')">30 días</button>
+      <button data-r="otro" onclick="rangoMovs('otro')">📅 Fechas</button>
+    </div>
+    <div class="row hide" id="mvFechas">
+      <div><label style="margin-top:0">Desde</label><input type="date" id="vDesde" onchange="cargarMovs()"></div>
+      <div><label style="margin-top:0">Hasta</label><input type="date" id="vHasta" onchange="cargarMovs()"></div>
+    </div>
+    <div class="row">
+      <div><label>Tipo</label><select id="vTipo" onchange="cargarMovs()"><option value="">Todos</option><option value="salida">Salidas</option><option value="devolucion">Devoluciones</option><option value="baja">Egresos</option><option value="alta">Ingresos nuevos</option><option value="reactivacion">Reactivaciones</option></select></div>
+      <div id="vUserBox" class="hide"><label>Quién</label><select id="vUser" onchange="cargarMovs()"><option value="">Todos</option></select></div>
+    </div>
+    <label>Filtrar (paciente, DNI, código, quién o destino)</label>
+    <input id="vQ" placeholder="Escribí para filtrar…" oninput="renderMovs()">
+    <p class="meta" id="vInfo" style="color:var(--mu);font-size:13px"></p>
+    <div id="vLista"></div>
+    <button class="btn sec hide" id="vCsv" onclick="descargarMovs()">⬇️ Descargar Excel (CSV)</button>
   </div>
 </section>
 
@@ -295,28 +365,11 @@ th{color:var(--mu);font-size:12px}
       <div class="row" style="margin-top:12px">
         <input id="mQ" placeholder="Apellido, DNI, legajo o código" onkeydown="if(event.key==='Enter')cargarMaterialAdmin()">
         <select id="mEst" style="flex:0 0 130px" onchange="cargarMaterialAdmin()">
-          <option value="">Todos</option><option value="en_fichero">En fichero</option><option value="afuera">Afuera</option><option value="baja">De baja</option>
+          <option value="">Todos</option><option value="en_fichero">En fichero</option><option value="afuera">Afuera</option><option value="baja">Egresados</option>
         </select>
       </div>
       <button class="btn sec" style="margin-top:8px" onclick="cargarMaterialAdmin()">Buscar</button>
       <div id="mLista"></div>
-    </div>
-
-    <div id="tabMovs" class="hide">
-      <div class="row">
-        <div><label style="margin-top:0">Desde</label><input type="date" id="vDesde"></div>
-        <div><label style="margin-top:0">Hasta</label><input type="date" id="vHasta"></div>
-      </div>
-      <div class="row">
-        <div><label>Quién</label><select id="vUser"><option value="">Todos</option></select></div>
-        <div><label>Tipo</label><select id="vTipo"><option value="">Todos</option><option value="salida">Salidas</option><option value="devolucion">Devoluciones</option><option value="alta">Altas</option><option value="baja">Bajas</option><option value="reactivacion">Reactivaciones</option></select></div>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <button class="btn" onclick="cargarMovs()">Ver</button>
-        <button class="btn sec" onclick="descargarMovs()">⬇️ Excel (CSV)</button>
-      </div>
-      <p class="meta" id="vInfo" style="color:var(--mu);font-size:13px"></p>
-      <div style="overflow-x:auto"><table id="vTabla"></table></div>
     </div>
 
     <div id="tabOtros" class="hide">
@@ -382,6 +435,8 @@ th{color:var(--mu);font-size:12px}
 const SUPABASE_URL = 'https://kyofdbedxoebwvjicppp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_C_8uYK42SkpzHg8pLbP8GA_wdWu6ylS';
 const HORAS_SESION = 12;           // cuánto dura el login en el celular
+const ROLES_EGRESO = ['admin'];    // quiénes pueden hacer el egreso definitivo (sumá 'oficial' o 'autorizado' si querés)
+const DESTINOS_EGRESO = ['Archivo de egresados', 'Fichero de retiros', 'Fichero de bajas', 'División Personal', 'Mesa de entradas'];
 /* =================================================== */
 
 // El token de sesión viaja en el encabezado x-fichero-token: sin él, Supabase no devuelve nada.
@@ -398,8 +453,9 @@ let user = null, sel = null, scanner = null, modoBuscar = 'sacar', ultimoReporte
 
 /* ---------- utilidades ---------- */
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fmt = ts => new Date(ts).toLocaleString('es-AR',{timeZone:TZ,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-const hora = ts => new Date(ts).toLocaleTimeString('es-AR',{timeZone:TZ,hour:'2-digit',minute:'2-digit'});
+const fmt = ts => new Date(ts).toLocaleString('es-AR',{timeZone:TZ,day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+const fmtLargo = ts => new Date(ts).toLocaleString('es-AR',{timeZone:TZ,day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}) + ' hs';
+const hora = ts => new Date(ts).toLocaleTimeString('es-AR',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
 const hoyISO = () => new Date().toLocaleDateString('en-CA',{timeZone:TZ});
 const inicioDia = d => new Date(d + 'T00:00:00-03:00');
 const baseURL = () => location.origin + location.pathname;
@@ -455,6 +511,7 @@ async function sesionViva(){
 }
 function nombreUser(){ return (user.jerarquia ? user.jerarquia + ' ' : '') + user.nombre; }
 const esAdmin = () => user && user.rol === 'admin';
+const puedeEgresar = () => user && ROLES_EGRESO.includes(user.rol);
 
 function abrirCambioPass(obligatorio){
   ocultarClaves();
@@ -483,12 +540,13 @@ async function entrar(){
   $('hdrUser').textContent = '👤 ' + nombreUser() + (esAdmin() ? ' · Admin' : '');
   $('btnSalir').classList.remove('hide');
   $('btnAdmin').classList.toggle('hide', !esAdmin());
+  $('btnEgreso').classList.toggle('hide', !puedeEgresar());
   // ¿Se abrió escaneando la etiqueta de un sobre? (?m=CODIGO)
   const m = new URLSearchParams(location.search).get('m');
   if(m){
     history.replaceState(null, '', baseURL());
     const { data } = await sb.from('fichero_materiales').select('*').eq('codigo', m).maybeSingle();
-    if(data && data.estado !== 'baja'){ modoBuscar = data.estado === 'afuera' ? 'devolver' : 'sacar'; return elegir(data); }
+    if(data){ modoBuscar = data.estado === 'afuera' ? 'devolver' : data.estado === 'baja' ? 'consulta' : 'sacar'; return elegir(data); }
     toast('Código no registrado: ' + m, 1);
   }
   irMenu();
@@ -522,9 +580,11 @@ async function ultimasSalidas(ids){
 }
 
 /* ---------- BUSCAR ---------- */
+const TITULO_BUSCAR = { sacar: '📤 Sacar material', consulta: '🔎 ¿Dónde está?', egreso: '🗃️ Egreso definitivo · buscá el material', devolver: '📥 Devolver material' };
 function abrirBuscar(modo){
+  if(modo === 'egreso' && !puedeEgresar()) return toast('No tenés permiso para hacer egresos', 1);
   modoBuscar = modo;
-  $('bTitulo').textContent = modo === 'sacar' ? '📤 Sacar material' : '🔎 ¿Dónde está?';
+  $('bTitulo').textContent = TITULO_BUSCAR[modo];
   $('bQ').value = ''; $('bRes').innerHTML = '';
   show('vBuscar'); setTimeout(() => $('bQ').focus(), 100);
 }
@@ -533,12 +593,13 @@ async function buscar(exacto){
   if(!q) return;
   $('bRes').innerHTML = '<p class="meta">Buscando…</p>';
   if(exacto){
-    const { data } = await sb.from('fichero_materiales').select('*').eq('codigo', q).neq('estado','baja');
+    const { data } = await sb.from('fichero_materiales').select('*').eq('codigo', q);
     if(data && data.length === 1) return elegir(data[0]);
   }
   // Número → DNI / legajo / código exacto. Texto → apellido y nombre.
+  // Incluye los egresados: así, si alguien lo busca, ve a dónde pasó el sobre.
   const num = /^[0-9.]+$/.test(q) ? q.replace(/\./g, '') : null;
-  let qm = sb.from('fichero_materiales').select('*').neq('estado','baja').order('apellido_nombre').limit(25);
+  let qm = sb.from('fichero_materiales').select('*').order('apellido_nombre').limit(25);
   qm = num ? qm.or(`codigo.eq.${num},dni.eq.${num},legajo_policial.eq.${num}`)
            : qm.or(`codigo.eq.${q},apellido_nombre.ilike.%${q.replace(/ /g, '%')}%`);
   const [rm, rp] = await Promise.all([ qm, sb.rpc('fichero_buscar_personal', { p_q: q }) ]);
@@ -549,7 +610,7 @@ async function buscar(exacto){
   const dnisMat = new Set(mats.map(m => m.dni));
   const faltan = pers.filter(p => p.tiene_material && !dnisMat.has(p.dni)).map(p => p.dni);
   if(faltan.length){
-    const { data } = await sb.from('fichero_materiales').select('*').in('dni', faltan).neq('estado','baja');
+    const { data } = await sb.from('fichero_materiales').select('*').in('dni', faltan);
     (data || []).forEach(m => { mats.push(m); dnisMat.add(m.dni); });
   }
   // Personas del padrón SIN material activo
@@ -568,7 +629,7 @@ async function buscar(exacto){
     <div class="item" onclick="elegir(window._res[${i}])">
       <b>${esc(m.apellido_nombre)}</b>
       <div class="meta">${esc(m.tipo)} · Cód. ${esc(m.codigo)}${m.dni?' · DNI '+esc(m.dni):''}${m.legajo_policial?' · Leg. '+esc(m.legajo_policial):''}${m.ubicacion?' · '+esc(m.ubicacion):''}</div>
-      ${m.estado==='afuera' ? '<span class="badge b-er">NO ESTÁ EN EL FICHERO</span>' : '<span class="badge b-ok">EN FICHERO</span>'}
+      ${badgeEstado(m)}
     </div>`).join('') + sinMat.map((p,i) => `
     <div class="item" style="background:#f8fafc" onclick="mostrarSinMaterial(window._sin[${i}])">
       <b style="color:var(--mu)">${esc(nombrePersona(p))}</b>
@@ -577,6 +638,9 @@ async function buscar(exacto){
     </div>`).join('');
 }
 const nombrePersona = p => [p.apellido, p.nombre].filter(Boolean).join(' ');
+const badgeEstado = m => m.estado === 'afuera' ? '<span class="badge b-er">NO ESTÁ EN EL FICHERO</span>'
+  : m.estado === 'baja' ? '<span class="badge b-in">🗃️ EGRESADO · tocá para ver a dónde pasó</span>'
+  : '<span class="badge b-ok">EN FICHERO</span>';
 function mostrarSinMaterial(p){
   show('vBuscar');
   window._pSin = p;
@@ -620,11 +684,14 @@ async function alertaNoEsta(m){
 
 async function elegir(m){
   sel = m;
+  if(m.estado === 'baja') return mostrarEgresado(m);
   if(modoBuscar === 'devolver') return pedirDevolucion(m);
+  if(modoBuscar === 'egreso') return abrirEgreso(m);
   if(modoBuscar === 'consulta'){
     $('bRes').innerHTML = fichaMaterial(m) + (m.estado === 'afuera'
       ? await alertaNoEsta(m) + `<button class="btn ok" onclick="pedirDevolucion(sel)">📥 Registrar devolución</button>`
-      : `<div class="alerta ok">✅ Está en el fichero${m.ubicacion?' · '+esc(m.ubicacion):''}.</div>`);
+      : `<div class="alerta ok">✅ Está en el fichero${m.ubicacion?' · '+esc(m.ubicacion):''}.</div>`)
+      + (puedeEgresar() ? `<button class="btn sec" onclick="abrirEgreso(sel)">🗃️ Egreso definitivo de este sobre</button>` : '');
     return;
   }
   // modo sacar
@@ -640,6 +707,77 @@ async function elegir(m){
     document.querySelector('input[name=sMot]').checked = true; motivoCambio();
   }
 }
+/* ---------- EGRESO DEFINITIVO ---------- */
+async function ultimoEgreso(id){
+  const { data } = await sb.from('fichero_movimientos').select('*').eq('material_id', id).eq('tipo','baja')
+    .order('fecha_hora', { ascending: false }).limit(1);
+  return data && data[0];
+}
+async function alertaEgresado(m){
+  const e = await ultimoEgreso(m.id);
+  if(!e) return `<div class="alerta in">🗃️ <b>YA NO ESTÁ EN ESTE FICHERO — FUE EGRESADO</b><div style="margin-top:6px">No hay datos de a dónde pasó.</div></div>`;
+  return `<div class="alerta in">🗃️ <b>YA NO ESTÁ EN ESTE FICHERO — FUE EGRESADO</b>
+    <dl class="dl"><dt>Pasó a</dt><dd style="font-size:17px">📍 ${esc(e.destino || 'Sin dato')}</dd>
+    ${e.motivo ? `<dt>Motivo</dt><dd>${esc(e.motivo)}</dd>` : ''}
+    ${e.solicitante ? `<dt>Referencia</dt><dd>${esc(e.solicitante)}</dd>` : ''}
+    <dt>Cuándo</dt><dd>${fmtLargo(e.fecha_hora)}</dd>
+    <dt>Lo registró</dt><dd>${esc(e.usuario_nombre)}</dd>
+    ${e.observaciones ? `<dt>Obs.</dt><dd>${esc(e.observaciones)}</dd>` : ''}</dl></div>`;
+}
+async function mostrarEgresado(m){
+  sel = m;
+  if($('vBuscar').classList.contains('hide')){ $('bTitulo').textContent = TITULO_BUSCAR[modoBuscar] || TITULO_BUSCAR.consulta; show('vBuscar'); }
+  $('bRes').innerHTML = fichaMaterial(m) + '<p class="meta">Buscando a dónde pasó…</p>';
+  $('bRes').innerHTML = fichaMaterial(m) + await alertaEgresado(m)
+    + (esAdmin() ? `<p class="meta" style="color:var(--mu);font-size:13px">Si el sobre vuelve a este fichero: Panel → Material → Egresados → ♻️ Reactivar.</p>` : '');
+}
+async function abrirEgreso(m){
+  if(!puedeEgresar()) return toast('No tenés permiso para hacer egresos', 1);
+  if(m.estado === 'baja') return mostrarEgresado(m);
+  sel = m;
+  show('vEgreso');
+  $('eMat').innerHTML = fichaMaterial(m) + (m.estado === 'afuera'
+    ? `<div class="alerta wa">📤 Este material figura <b>afuera</b> del fichero. Si no va a volver, podés registrar el egreso igual.</div>` : '');
+  ['eMot','eMotOtro','eDest','eUbi','eExp','eObs'].forEach(id => $(id).value = '');
+  $('eMotOtro').classList.add('hide');
+  // Sugerencias: los destinos de siempre + los que ya se usaron
+  const { data } = await sb.from('fichero_movimientos').select('destino').eq('tipo','baja').not('destino','is',null)
+    .order('fecha_hora', { ascending: false }).limit(200);
+  const usados = (data || []).map(d => String(d.destino).split(' · ')[0].trim()).filter(Boolean);
+  $('eDestList').innerHTML = [...new Set([...usados, ...DESTINOS_EGRESO])].map(d => `<option value="${esc(d)}">`).join('');
+}
+function volverEgreso(){ enAdmin ? abrirAdmin('material') : abrirBuscar('egreso'); }
+async function confirmarEgreso(){
+  if(!puedeEgresar()) return toast('No tenés permiso para hacer egresos', 1);
+  let motivo = $('eMot').value;
+  if(!motivo) return toast('Elegí el motivo', 1);
+  if(motivo === 'Otra circunstancia'){
+    const o = $('eMotOtro').value.trim();
+    if(!o) return toast('Especificá la circunstancia', 1);
+    motivo = 'Otra: ' + o;
+  }
+  const dest = $('eDest').value.trim();
+  if(!dest) return toast('Indicá a dónde pasa el sobre', 1);
+  const ubi = $('eUbi').value.trim(), exp = $('eExp').value.trim();
+  const destino = ubi ? dest + ' · ' + ubi : dest;
+  if(!confirm(`¿Registrar el EGRESO DEFINITIVO de:\n${sel.apellido_nombre} (${sel.tipo})?\n\nMotivo: ${motivo}\nPasa a: ${destino}\n\nDeja de figurar como material del fichero.`)) return;
+  $('eBtn').disabled = true;
+  const estadoAnt = sel.estado;
+  try{
+    const { data: upd, error: e1 } = await sb.from('fichero_materiales')
+      .update({ estado: 'baja' }).eq('id', sel.id).eq('estado', estadoAnt).select();
+    if(e1) throw e1;
+    if(!upd || !upd.length) return toast('El material cambió de estado mientras tanto. Buscalo de nuevo.', 1);
+    const mov = { material_id: sel.id, tipo: 'baja', usuario_id: user.id, usuario_nombre: nombreUser(),
+                  destino, motivo, solicitante: exp ? 'Expte./Nota ' + exp : null, observaciones: $('eObs').value.trim() || null };
+    const { data: ins, error: e2 } = await sb.from('fichero_movimientos').insert(mov).select().single();
+    if(e2){ await sb.from('fichero_materiales').update({ estado: estadoAnt }).eq('id', sel.id); throw e2; }
+    sel.estado = 'baja';
+    ticket('🗃️', 'EGRESO REGISTRADO', sel, ins);
+  } catch(e){ toast('Error: ' + e.message, 1); }
+  finally{ $('eBtn').disabled = false; }
+}
+
 function motivoCambio(){
   const v = document.querySelector('input[name=sMot]:checked').value;
   $('sSolic').classList.toggle('hide', v !== 'A solicitud');
@@ -670,17 +808,21 @@ async function confirmarSalida(){
   } catch(e){ toast('Error: ' + e.message, 1); }
   finally{ $('sBtn').disabled = false; }
 }
+const QUIEN_TX = { salida: 'Lo sacó', devolucion: 'Lo devolvió', baja: 'Lo registró' };
 function ticket(icono, titulo, m, mov){
+  const egreso = mov.tipo === 'baja';
   $('tBody').innerHTML = `<div class="ticket"><div class="big">${icono}</div><h2>${titulo}</h2></div>
     ${fichaMaterial(m)}
     <dl class="dl">
-      <dt>Fecha / hora</dt><dd>${fmt(mov.fecha_hora)}</dd>
-      <dt>${mov.tipo==='salida'?'Lo sacó':'Lo devolvió'}</dt><dd>${esc(mov.usuario_nombre)}</dd>
-      ${mov.destino?`<dt>Destino</dt><dd>${esc(mov.destino)}</dd>`:''}
+      <dt>Fecha / hora</dt><dd>${egreso ? fmtLargo(mov.fecha_hora) : fmt(mov.fecha_hora)}</dd>
+      <dt>${QUIEN_TX[mov.tipo] || 'Registró'}</dt><dd>${esc(mov.usuario_nombre)}</dd>
+      ${mov.destino?`<dt>${egreso?'Pasó a':'Destino'}</dt><dd>${esc(mov.destino)}</dd>`:''}
       ${mov.motivo?`<dt>Motivo</dt><dd>${esc(mov.motivo)}${mov.solicitante?' — '+esc(mov.solicitante):''}</dd>`:''}
       ${mov.observaciones?`<dt>Obs.</dt><dd>${esc(mov.observaciones)}</dd>`:''}
-    </dl>`;
-  $('tPrint').classList.add('hide');
+    </dl>
+    ${egreso ? `<div class="testigo">Este sobre ya no está en el fichero.<br><b>📍 Buscarlo en: ${esc(mov.destino)}</b></div>
+      <p class="meta noprint" style="color:var(--mu);font-size:13px;text-align:center">Podés imprimirlo y dejarlo en el lugar del sobre como testigo.</p>` : ''}`;
+  $('tPrint').classList.toggle('hide', !egreso);
   show('vTicket');
 }
 
@@ -786,7 +928,11 @@ async function cargarReporte(){
   $('rStats').innerHTML = `<div><b>${cnt('salida')}</b><small>Salidas</small></div><div><b>${cnt('devolucion')}</b><small>Devueltos</small></div>
     <div><b>${cnt('alta')}</b><small>Nuevos</small></div><div style="${A.length?'background:var(--erbg);color:var(--er)':''}"><b>${A.length}</b><small>Afuera ahora</small></div>`;
 
-  let txt = `*REPORTE DIARIO FICHERO JPRM*\n${$('rTit').textContent}\nSalidas: ${cnt('salida')} · Devueltos: ${cnt('devolucion')} · Nuevos: ${cnt('alta')}\n`;
+  let txt = `*REPORTE DIARIO FICHERO JPRM*\n${$('rTit').textContent}\nSalidas: ${cnt('salida')} · Devueltos: ${cnt('devolucion')} · Nuevos: ${cnt('alta')}${cnt('baja')?' · Egresos: '+cnt('baja'):''}\n`;
+  M.filter(m => m.tipo === 'baja').forEach((m,i) => {
+    if(!i) txt += `\n🗃️ *EGRESOS DEL DÍA:*\n`;
+    txt += `• ${m.fichero_materiales?.apellido_nombre} (${m.fichero_materiales?.tipo}) → pasó a ${m.destino||'sin dato'} · ${m.motivo||''}\n`;
+  });
   if(A.length){
     txt += `\n⚠️ *NO ESTÁN EN EL FICHERO (${A.length}):*\n`;
     $('rAlertas').innerHTML = `<div class="alerta er"><b>⚠️ ALERTA — ${A.length} legajo(s) no están en el fichero</b>` +
@@ -798,13 +944,13 @@ async function cargarReporte(){
     $('rAlertas').innerHTML = `<div class="alerta ok">✅ Todo el material está en el fichero.</div>`;
     txt += `\n✅ Todo el material está en el fichero.\n`;
   }
-  const tipoTx = { salida: '📤 Salida', devolucion: '📥 Devuelto', alta: '➕ Nuevo' };
+  const tipoTx = { salida: '📤 Salida', devolucion: '📥 Devuelto', alta: '➕ Nuevo', baja: '🗃️ Egreso', reactivacion: '♻️ Reactivado' };
   $('rTabla').innerHTML = M.length
     ? `<tr><th>Hora</th><th>Mov.</th><th>Paciente</th><th>Quién</th><th>Destino / motivo</th></tr>` + M.map(m => `<tr>
         <td>${hora(m.fecha_hora)}</td><td>${tipoTx[m.tipo]}</td>
         <td>${esc(m.fichero_materiales?.apellido_nombre)}<br><small style="color:var(--mu)">${esc(m.fichero_materiales?.tipo)}</small></td>
         <td>${esc(m.usuario_nombre)}</td>
-        <td>${esc(m.destino||'')}${m.motivo?'<br><small>'+esc(m.motivo)+(m.solicitante?' — '+esc(m.solicitante):'')+'</small>':''}</td></tr>`).join('')
+        <td>${m.tipo==='baja'&&m.destino?'→ ':''}${esc(m.destino||'')}${m.motivo?'<br><small>'+esc(m.motivo)+(m.solicitante?' — '+esc(m.solicitante):'')+'</small>':''}</td></tr>`).join('')
     : `<tr><td style="color:var(--mu)">Sin movimientos este día.</td></tr>`;
   ultimoReporte = txt;
 }
@@ -834,7 +980,8 @@ function cerrarScan(){
 let adminUsuarios = [], uEditId = null, movsCache = [], enAdmin = false, tabAdmin = 'personal';
 function volver(){ enAdmin ? abrirAdmin(tabAdmin) : irMenu(); }
 const ROL_TX = { admin: 'Administrador', oficial: 'Oficial', autorizado: 'Autorizado' };
-const TIPO_TX = { salida: '📤 Salida', devolucion: '📥 Devuelto', alta: '➕ Alta', baja: '🗑️ Baja', reactivacion: '♻️ Reactivado' };
+const TIPO_TX = { salida: '📤 Salida', devolucion: '📥 Devuelto', alta: '➕ Ingreso', baja: '🗃️ Egreso', reactivacion: '♻️ Reactivado' };
+const TIPO_BADGE = { salida: 'b-wa', devolucion: 'b-ok', alta: 'b-az', baja: 'b-in', reactivacion: 'b-ok' };
 
 function abrirAdmin(tab){
   if(!esAdmin()) return irMenu();
@@ -843,15 +990,12 @@ function abrirAdmin(tab){
   adminTab(tab || tabAdmin);
 }
 function adminTab(t){
+  if(t === 'movs') return abrirMovs();   // usa la misma pantalla que ve todo el personal (con filtros extra para admin)
   tabAdmin = t;
   document.querySelectorAll('#vAdmin .tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
-  ['personal','material','movs','otros'].forEach(x => $('tab' + x[0].toUpperCase() + x.slice(1)).classList.toggle('hide', x !== t));
+  ['personal','material','otros'].forEach(x => $('tab' + x[0].toUpperCase() + x.slice(1)).classList.toggle('hide', x !== t));
   if(t === 'personal') cargarUsuariosAdmin();
   if(t === 'material') cargarMaterialAdmin();
-  if(t === 'movs'){
-    if(!$('vDesde').value){ const h = hoyISO(); $('vHasta').value = h; $('vDesde').value = new Date(inicioDia(h).getTime() - 6*864e5).toLocaleDateString('en-CA',{timeZone:TZ}); }
-    cargarUsuariosAdmin(true).then(cargarMovs);
-  }
 }
 
 /* ----- Personal autorizado ----- */
@@ -962,7 +1106,7 @@ async function contar(estado){
 async function cargarMaterialAdmin(){
   const [tot, en, af, ba] = await Promise.all([contar(), contar('en_fichero'), contar('afuera'), contar('baja')]);
   $('mStats').innerHTML = `<div><b>${tot}</b><small>Total</small></div><div><b>${en}</b><small>En fichero</small></div>
-    <div style="${af?'background:var(--erbg);color:var(--er)':''}"><b>${af}</b><small>Afuera</small></div><div><b>${ba}</b><small>De baja</small></div>`;
+    <div style="${af?'background:var(--erbg);color:var(--er)':''}"><b>${af}</b><small>Afuera</small></div><div><b>${ba}</b><small>Egresados</small></div>`;
   let q = sb.from('fichero_materiales').select('*').order('apellido_nombre').limit(100);
   const est = $('mEst').value; if(est) q = q.eq('estado', est);
   const t = $('mQ').value.replace(/[,()*%]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -971,7 +1115,7 @@ async function cargarMaterialAdmin(){
   const { data, error } = await q;
   if(error) return toast(error.message, 1);
   window._mat = data || [];
-  const badge = { en_fichero: '<span class="badge b-ok">EN FICHERO</span>', afuera: '<span class="badge b-er">AFUERA</span>', baja: '<span class="badge b-mu">DE BAJA</span>' };
+  const badge = { en_fichero: '<span class="badge b-ok">EN FICHERO</span>', afuera: '<span class="badge b-er">AFUERA</span>', baja: '<span class="badge b-in">🗃️ EGRESADO</span>' };
   $('mLista').innerHTML = (window._mat.length === 100 ? '<p class="meta" style="color:var(--mu);font-size:13px">Mostrando los primeros 100. Usá el buscador para encontrar uno puntual.</p>' : '') +
     window._mat.map((m,i) => `<div class="item" style="cursor:default">
       <b>${esc(m.apellido_nombre)}</b>
@@ -979,7 +1123,7 @@ async function cargarMaterialAdmin(){
       ${badge[m.estado] || ''}<br>
       <button class="btn sec chico" onclick="historialMaterial(window._mat[${i}])">📜 Historial</button>
       <button class="btn sec chico" onclick="etiqueta(window._mat[${i}])">🏷️ Etiqueta QR</button>
-      ${m.estado === 'en_fichero' ? `<button class="btn er chico" onclick="cambiarEstadoMat(window._mat[${i}],'baja')">🗑️ Dar de baja</button>` : ''}
+      ${m.estado !== 'baja' ? `<button class="btn er chico" onclick="abrirEgreso(window._mat[${i}])">🗃️ Egreso definitivo</button>` : ''}
       ${m.estado === 'baja' ? `<button class="btn ok chico" onclick="cambiarEstadoMat(window._mat[${i}],'en_fichero')">♻️ Reactivar</button>` : ''}
       <div id="hist_${m.id}"></div></div>`).join('') || '<p class="meta">Sin resultados.</p>';
 }
@@ -1002,30 +1146,85 @@ async function historialMaterial(m){
     <td>${esc(v.usuario_nombre||'')}</td><td>${esc(v.destino||'')}${v.motivo?' · '+esc(v.motivo):''}${v.solicitante?' — '+esc(v.solicitante):''}${v.observaciones?'<br><small>'+esc(v.observaciones)+'</small>':''}</td></tr>`).join('') + '</table>';
 }
 
-/* ----- Movimientos (historial completo) ----- */
+/* ----- Movimientos (lo ve todo el personal; admin además filtra por usuario y descarga) ----- */
+let rangoMov = 'hoy', movsSeq = 0;
+async function abrirMovs(){
+  show('vMovs');
+  if(!(await sesionViva())) return;
+  $('vUserBox').classList.toggle('hide', !esAdmin());
+  $('vCsv').classList.toggle('hide', !esAdmin());
+  if(esAdmin()) await cargarUsuariosAdmin(true);
+  rangoMovs(rangoMov);
+}
+function rangoMovs(r){
+  rangoMov = r;
+  document.querySelectorAll('#mvRango button').forEach(b => b.classList.toggle('on', b.dataset.r === r));
+  $('mvFechas').classList.toggle('hide', r !== 'otro');
+  const h = hoyISO(), dia = n => new Date(inicioDia(h).getTime() - n*864e5).toLocaleDateString('en-CA',{timeZone:TZ});
+  const R = { hoy: [h, h], ayer: [dia(1), dia(1)], '7': [dia(6), h], '30': [dia(29), h] };
+  if(R[r]){ $('vDesde').value = R[r][0]; $('vHasta').value = R[r][1]; }
+  else if(!$('vDesde').value){ $('vDesde').value = dia(6); $('vHasta').value = h; }
+  cargarMovs();
+}
 async function cargarMovs(){
   const d = $('vDesde').value || hoyISO(), h = $('vHasta').value || hoyISO();
-  let q = sb.from('fichero_movimientos').select('*, fichero_materiales(codigo,apellido_nombre,tipo,dni)')
+  const seq = ++movsSeq;
+  $('vInfo').textContent = 'Cargando…';
+  let q = sb.from('fichero_movimientos').select('*, fichero_materiales(codigo,apellido_nombre,tipo,dni,legajo_policial,estado)')
     .gte('fecha_hora', inicioDia(d).toISOString()).lt('fecha_hora', new Date(inicioDia(h).getTime() + 864e5).toISOString())
     .order('fecha_hora', { ascending: false }).limit(1000);
-  if($('vUser').value) q = q.eq('usuario_id', +$('vUser').value);
+  if(esAdmin() && $('vUser').value) q = q.eq('usuario_id', +$('vUser').value);
   if($('vTipo').value) q = q.eq('tipo', $('vTipo').value);
   const { data, error } = await q;
-  if(error) return toast(error.message, 1);
+  if(seq !== movsSeq) return;            // llegó una consulta más nueva
+  if(error){ $('vInfo').textContent = ''; return toast(error.message, 1); }
   movsCache = data || [];
-  $('vInfo').textContent = `${movsCache.length} movimiento(s)${movsCache.length === 1000 ? ' (máximo 1000; acotá las fechas)' : ''}`;
-  $('vTabla').innerHTML = movsCache.length ? `<tr><th>Fecha</th><th>Mov.</th><th>Paciente</th><th>Quién</th><th>Destino / motivo</th></tr>` +
-    movsCache.map(v => `<tr><td>${fmt(v.fecha_hora)}</td><td>${TIPO_TX[v.tipo]||v.tipo}</td>
-      <td>${esc(v.fichero_materiales?.apellido_nombre)}<br><small style="color:var(--mu)">${esc(v.fichero_materiales?.codigo)}</small></td>
-      <td>${esc(v.usuario_nombre||'')}</td>
-      <td>${esc(v.destino||'')}${v.motivo?'<br><small>'+esc(v.motivo)+(v.solicitante?' — '+esc(v.solicitante):'')+'</small>':''}${v.observaciones?'<br><small>'+esc(v.observaciones)+'</small>':''}</td></tr>`).join('')
-    : '<tr><td style="color:var(--mu)">Sin movimientos en ese período.</td></tr>';
+  // Para cada salida: ¿volvió? (la devolución más próxima posterior del mismo material)
+  const devs = {};
+  movsCache.filter(v => v.tipo === 'devolucion').forEach(v => (devs[v.material_id] = devs[v.material_id] || []).push(v));
+  movsCache.forEach(v => {
+    if(v.tipo !== 'salida') return;
+    const t = +new Date(v.fecha_hora);
+    const vuelta = (devs[v.material_id] || []).filter(x => +new Date(x.fecha_hora) > t).sort((a,b) => new Date(a.fecha_hora) - new Date(b.fecha_hora))[0];
+    v._vuelta = vuelta ? vuelta.fecha_hora : null;
+    v._sigueAfuera = !vuelta && v.fichero_materiales?.estado === 'afuera'
+      && !movsCache.some(x => x.material_id === v.material_id && x.tipo === 'salida' && +new Date(x.fecha_hora) > t);
+  });
+  renderMovs();
+}
+function movsFiltrados(){
+  const pal = $('vQ').value.trim().toUpperCase().replace(/\./g, '').split(/\s+/).filter(Boolean);
+  if(!pal.length) return movsCache;
+  return movsCache.filter(v => { const m = v.fichero_materiales || {};
+    const txt = [m.apellido_nombre, m.dni, m.legajo_policial, m.codigo, v.usuario_nombre, v.destino, v.motivo, v.solicitante].join(' ').toUpperCase();
+    return pal.every(w => txt.includes(w)); });
+}
+function renderMovs(){
+  const L = movsFiltrados(), ini = inicioDia(hoyISO());
+  const afuera = L.filter(v => v._sigueAfuera).length;
+  $('vInfo').textContent = `${L.length} movimiento(s)${L.length !== movsCache.length ? ' de ' + movsCache.length : ''}`
+    + (afuera ? ` · ${afuera} salida(s) siguen afuera` : '') + (movsCache.length === 1000 ? ' (máximo 1000; acotá las fechas)' : '');
+  const variosDias = $('vDesde').value !== $('vHasta').value;
+  $('vLista').innerHTML = L.map(v => { const m = v.fichero_materiales || {};
+    const cuando = variosDias ? fmt(v.fecha_hora) + ' hs' : hora(v.fecha_hora) + ' hs';
+    let estado = '';
+    if(v.tipo === 'salida') estado = v._vuelta ? `<span class="badge b-ok">Volvió ${new Date(v._vuelta) < ini || variosDias ? fmt(v._vuelta) : hora(v._vuelta)} hs</span>`
+      : v._sigueAfuera ? `<span class="badge b-er">${new Date(v.fecha_hora) < ini ? 'NO DEVUELTO' : 'SIGUE AFUERA'}</span>` : '';
+    return `<div class="item mov" style="cursor:default">
+      <div class="cab"><span class="badge ${TIPO_BADGE[v.tipo]||'b-mu'}" style="margin:0">${TIPO_TX[v.tipo]||esc(v.tipo)}</span><span class="hr">🕒 ${cuando}</span></div>
+      <b style="margin-top:6px">${esc(m.apellido_nombre || '—')}</b>
+      <div class="meta">${esc(m.tipo||'')}${m.codigo?' · Cód. '+esc(m.codigo):''}${m.dni?' · DNI '+esc(m.dni):''}</div>
+      <div class="det">👤 ${esc(v.usuario_nombre||'')}${v.destino?` · ${v.tipo==='baja'?'📍 pasó a':'→'} <b style="display:inline">${esc(v.destino)}</b>`:''}</div>
+      ${v.motivo||v.solicitante||v.observaciones ? `<div class="meta">${esc(v.motivo||'')}${v.solicitante?' — '+esc(v.solicitante):''}${v.observaciones?(v.motivo?' · ':'')+esc(v.observaciones):''}</div>` : ''}
+      ${estado}</div>`; }).join('')
+    || `<div class="alerta ok" style="margin-top:4px">Sin movimientos ${$('vQ').value.trim() ? 'con ese filtro' : 'en ese período'}.</div>`;
 }
 function descargarMovs(){
-  if(!movsCache.length) return toast('No hay movimientos para descargar', 1);
+  const lista = movsFiltrados();
+  if(!lista.length) return toast('No hay movimientos para descargar', 1);
   const col = ['Fecha y hora','Movimiento','Paciente','Código','DNI','Tipo de material','Quién','Destino','Motivo','Solicitante','Observaciones'];
   const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-  const filas = movsCache.map(v => [new Date(v.fecha_hora).toLocaleString('es-AR',{timeZone:TZ}), v.tipo, v.fichero_materiales?.apellido_nombre,
+  const filas = lista.map(v => [new Date(v.fecha_hora).toLocaleString('es-AR',{timeZone:TZ}), v.tipo, v.fichero_materiales?.apellido_nombre,
     v.fichero_materiales?.codigo, v.fichero_materiales?.dni, v.fichero_materiales?.tipo, v.usuario_nombre, v.destino, v.motivo, v.solicitante, v.observaciones].map(q).join(';'));
   const blob = new Blob(['﻿' + [col.map(q).join(';'), ...filas].join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
