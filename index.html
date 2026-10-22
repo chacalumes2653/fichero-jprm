@@ -87,6 +87,23 @@ th{color:var(--mu);font-size:12px}
 .mov .det{font-size:13px;margin-top:4px}
 .testigo{border:2px solid var(--tx);border-radius:12px;padding:14px;margin-top:14px;text-align:center;font-size:17px}
 .hide{display:none!important}
+/* ---- Legajo digital ---- */
+.thgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:10px}
+.th{position:relative;border:1px solid var(--bd);border-radius:10px;overflow:hidden;background:#f1f5f9;aspect-ratio:3/4}
+.th img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+.th .n{position:absolute;top:4px;left:4px;background:#000a;color:#fff;font-size:11px;padding:2px 6px;border-radius:6px}
+.th .ctr{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;background:#000a}
+.th .ctr button{background:none;border:0;color:#fff;font-size:16px;padding:6px 4px;cursor:pointer}
+.seg{display:flex;background:var(--bg);border-radius:10px;padding:3px;margin-bottom:10px}
+.seg button{flex:1;border:0;background:none;padding:9px;border-radius:8px;font-size:14px;font-weight:600;color:var(--mu);cursor:pointer}
+.seg button.on{background:#fff;color:var(--az);box-shadow:0 1px 3px #0002}
+.lote{border-top:1px solid var(--bd);margin-top:14px;padding-top:12px}
+.lote .cab{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+#visor{position:fixed;inset:0;background:#0b1220f2;display:none;z-index:16;flex-direction:column}
+#visor .bar{display:flex;gap:8px;align-items:center;padding:10px;color:#fff}
+#visor .bar button{background:#ffffff22;border:0;color:#fff;border-radius:8px;padding:8px 14px;font-size:18px;cursor:pointer}
+#visor .img{flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:8px}
+#visor img{max-width:100%;max-height:100%;background:#fff}
 @media print{
   header,.noprint,#toast{display:none!important}
   body{background:#fff}
@@ -375,6 +392,8 @@ th{color:var(--mu);font-size:12px}
     <div id="tabOtros" class="hide">
       <button class="btn" style="margin-top:0" onclick="abrirReporte()">📊 Reporte diario</button>
       <button class="btn sec" onclick="abrirQrFichero()">🖨️ QR del fichero (para imprimir y pegar)</button>
+      <button class="btn sec" onclick="backupTotal()">🗄️ Backup de legajos digitales (ZIP)</button>
+      <p class="meta" id="escUso" style="color:var(--mu);font-size:13px"></p>
     </div>
   </div>
 </section>
@@ -422,7 +441,56 @@ th{color:var(--mu);font-size:12px}
   </div>
 </section>
 
+<!-- ============ LEGAJO DIGITAL (escaneos del paciente) ============ -->
+<section class="view hide" id="vLegajo">
+  <button class="btn sec volver-top noprint" onclick="cerrarLegajo()">← Volver</button>
+  <div class="card">
+    <h2>📎 Legajo digital</h2>
+    <div id="lgMat"></div>
+    <label>Escanear material</label>
+    <div class="seg" id="lgModo">
+      <button data-m="doc" class="on" onclick="modoEscaneo('doc')">📄 Documento</button>
+      <button data-m="color" onclick="modoEscaneo('color')">🎨 Color</button>
+    </div>
+    <div class="row">
+      <button class="btn" onclick="$('lgCam').click()">📷 Escanear</button>
+      <button class="btn sec" onclick="$('lgFotos').click()">🖼️ Desde fotos</button>
+    </div>
+    <input type="file" id="lgCam" accept="image/*" capture="environment" class="hide" onchange="agregarPaginas(this)">
+    <input type="file" id="lgFotos" accept="image/*" multiple class="hide" onchange="agregarPaginas(this)">
+    <div id="lgPend" class="hide">
+      <div class="thgrid" id="lgPendGrid" onclick="accionPend(event)"></div>
+      <p class="meta" id="lgPendInfo" style="color:var(--mu);font-size:13px"></p>
+      <label>Descripción</label>
+      <input id="lgDesc" maxlength="140" placeholder="Ej: Historia clínica, estudios cardiológicos…">
+      <p class="meta" style="color:var(--mu);font-size:13px">Podés seguir escaneando: cada hoja se suma al final. ◀ ▶ ordenan, ⟳ gira, ✕ quita.</p>
+      <div class="row">
+        <button class="btn sec" onclick="descartarPend()">Descartar</button>
+        <button class="btn ok" id="lgGuardar" onclick="guardarPend()">💾 Guardar en legajo</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <h2 style="margin:0">Material digitalizado</h2><span class="meta" id="lgTotal" style="color:var(--mu);font-size:13px"></span>
+    </div>
+    <div id="lgCola"></div>
+    <div id="lgLotes"></div>
+    <button class="btn sec hide" id="lgZip" onclick="backupMaterial()">⬇️ Descargar todo el legajo (ZIP)</button>
+  </div>
+</section>
+
 </main>
+
+<div id="visor">
+  <div class="bar">
+    <button onclick="moverVisor(-1)" aria-label="Página anterior">‹</button>
+    <span id="visorTx" style="flex:1;text-align:center;font-size:14px"></span>
+    <button onclick="moverVisor(1)" aria-label="Página siguiente">›</button>
+    <button onclick="cerrarVisor()" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="img"><img id="visorImg" alt="Página escaneada"></div>
+</div>
 
 <div id="scanModal">
   <div id="reader"></div>
@@ -667,9 +735,11 @@ async function autocompletarAlta(campo){
   $('aDni').value = p.dni || ''; $('aLeg').value = p.legajo || '';
   if(p.tiene_material) toast('Ojo: esta persona ya tiene material en el fichero', 1);
 }
-function fichaMaterial(m){
+function fichaMaterial(m, sinLegajo){
+  _matsLeg[m.id] = m;
   return `<div class="item" style="cursor:default"><b>${esc(m.apellido_nombre)}</b>
-    <div class="meta">${esc(m.tipo)} · Cód. ${esc(m.codigo)}${m.dni?' · DNI '+esc(m.dni):''}${m.legajo_policial?' · Leg. '+esc(m.legajo_policial):''}${m.ubicacion?' · '+esc(m.ubicacion):''}</div></div>`;
+    <div class="meta">${esc(m.tipo)} · Cód. ${esc(m.codigo)}${m.dni?' · DNI '+esc(m.dni):''}${m.legajo_policial?' · Leg. '+esc(m.legajo_policial):''}${m.ubicacion?' · '+esc(m.ubicacion):''}</div>
+    ${sinLegajo ? '' : `<button class="btn sec chico noprint" onclick="abrirLegajo('${esc(String(m.id))}')">📎 Legajo digital · escanear / ver</button>`}</div>`;
 }
 async function alertaNoEsta(m){
   const s = (await ultimasSalidas([m.id]))[m.id];
@@ -996,6 +1066,7 @@ function adminTab(t){
   ['personal','material','otros'].forEach(x => $('tab' + x[0].toUpperCase() + x.slice(1)).classList.toggle('hide', x !== t));
   if(t === 'personal') cargarUsuariosAdmin();
   if(t === 'material') cargarMaterialAdmin();
+  if(t === 'otros') cargarUsoEsc();
 }
 
 /* ----- Personal autorizado ----- */
@@ -1123,6 +1194,7 @@ async function cargarMaterialAdmin(){
       ${badge[m.estado] || ''}<br>
       <button class="btn sec chico" onclick="historialMaterial(window._mat[${i}])">📜 Historial</button>
       <button class="btn sec chico" onclick="etiqueta(window._mat[${i}])">🏷️ Etiqueta QR</button>
+      <button class="btn sec chico" onclick="abrirLegajo(window._mat[${i}])">📎 Legajo digital</button>
       ${m.estado !== 'baja' ? `<button class="btn er chico" onclick="abrirEgreso(window._mat[${i}])">🗃️ Egreso definitivo</button>` : ''}
       ${m.estado === 'baja' ? `<button class="btn ok chico" onclick="cambiarEstadoMat(window._mat[${i}],'en_fichero')">♻️ Reactivar</button>` : ''}
       <div id="hist_${m.id}"></div></div>`).join('') || '<p class="meta">Sin resultados.</p>';
@@ -1245,6 +1317,294 @@ function armarOjitos(){
   });
 }
 function ocultarClaves(){ document.querySelectorAll('.pw input').forEach(i => i.type = 'password'); document.querySelectorAll('.pw .ojo').forEach(b => b.textContent = '👁️'); }
+
+/* ================== LEGAJO DIGITAL (material escaneado por paciente) ================== */
+const ESC_MAX_LADO = 1600;   // px del lado mayor: una A4 queda legible (~140 dpi)
+const ESC_CALIDAD  = 0.5;    // 0.4 = más liviano · 0.7 = más nítido
+const _matsLeg = {};
+let legM = null, legVolverA = 'vMenu', legModo = 'doc', legPend = [], legFilas = [], legImg = {}, legObs = null;
+const kb = b => b >= 1048576 ? (b/1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b/1024)) + ' KB';
+const nuevoId = () => crypto.randomUUID ? crypto.randomUUID()
+  : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c === 'x' ? r : (r&3|8)).toString(16); });
+function cargarLib(src, global){
+  if(window[global]) return Promise.resolve();
+  return new Promise((ok, ko) => { const s = document.createElement('script'); s.src = src; s.onload = ok;
+    s.onerror = () => ko(new Error('No se pudo cargar ' + global)); document.head.appendChild(s); });
+}
+const libPDF = () => cargarLib('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', 'jspdf');
+const libZIP = () => cargarLib('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', 'JSZip');
+function bajarBlob(blob, nombre){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); }
+const nombreArchivo = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '_').slice(0, 50) || 'material';
+function blobB64(blob){ return new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = ko; r.readAsDataURL(blob); }); }
+function b64Blob(b64, mime){ const s = atob(b64), u = new Uint8Array(s.length); for(let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return new Blob([u], { type: mime }); }
+function logEsc(accion, mat, det){ sb.rpc('fichero_esc_log', { p_accion: accion, p_material_id: mat ? String(mat) : null, p_detalle: det || null }).then(() => {}, () => {}); }
+
+/* ----- Cola en el dispositivo: cada página se guarda acá primero y se sube sola (aunque se corte internet) ----- */
+const colaEsc = {
+  _db: null,
+  open(){ return this._db || (this._db = new Promise((ok, ko) => { const r = indexedDB.open('fichero_legajo', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('cola', { keyPath: 'id' }); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); })); },
+  async tx(modo, fn){ const db = await this.open(); return new Promise((ok, ko) => { const t = db.transaction('cola', modo); const r = fn(t.objectStore('cola'));
+    t.oncomplete = () => ok(r && r.result); t.onerror = () => ko(t.error); }); },
+  put(o){ return this.tx('readwrite', s => s.put(o)); },
+  del(id){ return this.tx('readwrite', s => s.delete(id)); },
+  async mias(){ const t = await this.tx('readonly', s => s.getAll()) || []; return user ? t.filter(x => x.usuario_id === String(user.id)) : []; }
+};
+let subiendoEsc = false;
+async function sincronizarEsc(){
+  if(subiendoEsc || !user) return; subiendoEsc = true; let subidas = 0;
+  try {
+    const cola = (await colaEsc.mias()).sort((a, b) => a.t - b.t);
+    for(const it of cola){
+      try {
+        const { error } = await sb.rpc('fichero_esc_subir', { p_material_id: it.material_id, p_lote: it.lote, p_pagina: it.pagina,
+          p_descripcion: it.descripcion, p_mime: it.blob.type, p_datos: await blobB64(it.blob) });
+        if(error) throw error;
+        await colaEsc.del(it.id); subidas++;
+      } catch(e){ console.warn('Escaneo pendiente, se reintenta:', e.message || e); break; }
+    }
+  } catch(e){ console.warn(e); }
+  finally { subiendoEsc = false; if(legM && !$('vLegajo').classList.contains('hide')) subidas ? cargarLegajo() : pintarCola(); }
+}
+addEventListener('online', sincronizarEsc);
+setInterval(sincronizarEsc, 30000);
+setTimeout(sincronizarEsc, 3000);
+
+/* ----- Abrir / cerrar el legajo de un paciente ----- */
+function abrirLegajo(x){
+  const m = typeof x === 'object' ? x : _matsLeg[x]; if(!m) return;
+  const vis = [...document.querySelectorAll('.view')].find(v => !v.classList.contains('hide'));
+  if(vis && vis.id !== 'vLegajo') legVolverA = vis.id;
+  legM = m; legPend = []; $('lgDesc').value = ''; renderPend();
+  $('lgMat').innerHTML = fichaMaterial(m, true);
+  $('lgLotes').innerHTML = '<p class="meta" style="color:var(--mu)">Cargando…</p>';
+  show('vLegajo'); cargarLegajo(); sincronizarEsc();
+}
+function cerrarLegajo(){
+  if(legPend.length && !confirm('Hay páginas escaneadas sin guardar. ¿Descartarlas?')) return;
+  legPend = []; renderPend(); legM = null; liberarImgs(); show(legVolverA);
+}
+function liberarImgs(){ Object.values(legImg).forEach(p => p.then(u => URL.revokeObjectURL(u), () => {})); legImg = {}; if(legObs){ legObs.disconnect(); legObs = null; } }
+
+/* ----- Procesado: achica, endereza, limpia y comprime cada foto en el celular ----- */
+async function leerImagen(file){
+  try { return await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+  catch(e){ return await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ko(new Error('Imagen ilegible')); i.src = URL.createObjectURL(file); }); }
+}
+async function procesarHoja(file, modo, rot){
+  const img = await leerImagen(file);
+  const s = Math.min(1, ESC_MAX_LADO / Math.max(img.width, img.height));
+  const w = Math.round(img.width * s), h = Math.round(img.height * s), gira = rot % 180 !== 0;
+  const c = document.createElement('canvas'); c.width = gira ? h : w; c.height = gira ? w : h;
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+  x.translate(c.width/2, c.height/2); x.rotate(rot * Math.PI/180); x.drawImage(img, -w/2, -h/2, w, h); x.setTransform(1, 0, 0, 1, 0, 0);
+  if(modo === 'doc'){   // grises + niveles automáticos: papel blanco, texto negro, pesa mucho menos
+    const d = x.getImageData(0, 0, c.width, c.height), p = d.data, hist = new Uint32Array(256), n = p.length / 4;
+    for(let i = 0; i < p.length; i += 4){ const g = (p[i]*.299 + p[i+1]*.587 + p[i+2]*.114) | 0; p[i] = g; hist[g]++; }
+    let lo = 0, hi = 255, acc = 0;
+    for(let v = 0; v < 256; v++){ acc += hist[v]; if(acc > n*.02){ lo = v; break; } }
+    acc = 0; for(let v = 255; v >= 0; v--){ acc += hist[v]; if(acc > n*.35){ hi = v; break; } }
+    if(hi - lo < 40) hi = Math.min(255, lo + 40);
+    const lut = new Uint8ClampedArray(256);
+    for(let v = 0; v < 256; v++){ const t = Math.max(0, Math.min(1, (v - lo) / (hi - lo))); lut[v] = 255 * Math.pow(t, 1.25); }
+    for(let i = 0; i < p.length; i += 4){ const g = lut[p[i]]; p[i] = p[i+1] = p[i+2] = g; }
+    x.putImageData(d, 0, 0);
+  }
+  let blob = await new Promise(r => c.toBlob(r, 'image/webp', ESC_CALIDAD));
+  if(!blob || blob.type !== 'image/webp') blob = await new Promise(r => c.toBlob(r, 'image/jpeg', ESC_CALIDAD + .1));
+  return blob;
+}
+
+/* ----- Páginas escaneadas todavía sin guardar ----- */
+async function modoEscaneo(m){
+  legModo = m;
+  document.querySelectorAll('#lgModo button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+  if(!legPend.length) return;
+  toast('Reprocesando páginas…');
+  for(const p of legPend){ p.modo = m; p.blob = await procesarHoja(p.file, m, p.rot); }
+  renderPend();
+}
+async function agregarPaginas(inp){
+  const files = [...inp.files]; inp.value = ''; if(!files.length) return;
+  toast(files.length > 1 ? `Procesando ${files.length} imágenes…` : 'Procesando…');
+  let mal = 0;
+  for(const f of files){ try { legPend.push({ file: f, rot: 0, modo: legModo, blob: await procesarHoja(f, legModo, 0) }); } catch(e){ mal++; } }
+  renderPend();
+  toast(mal ? `${mal} imagen(es) no se pudieron leer` : `${legPend.length} página(s) lista(s) para guardar`, mal);
+}
+function renderPend(){
+  const g = $('lgPendGrid'); g.querySelectorAll('img').forEach(i => URL.revokeObjectURL(i.src));
+  $('lgPend').classList.toggle('hide', !legPend.length);
+  g.innerHTML = legPend.map((p, i) => `<div class="th"><span class="n">${i+1} · ${kb(p.blob.size)}</span>
+    <img src="${URL.createObjectURL(p.blob)}" data-ver="${i}" alt="Página ${i+1}">
+    <div class="ctr"><button data-a="izq" data-i="${i}" title="Mover antes">◀</button><button data-a="rot" data-i="${i}" title="Girar">⟳</button>
+    <button data-a="der" data-i="${i}" title="Mover después">▶</button><button data-a="del" data-i="${i}" title="Quitar">✕</button></div></div>`).join('');
+  $('lgPendInfo').textContent = `${legPend.length} página(s) · ${kb(legPend.reduce((a, p) => a + p.blob.size, 0))} en total`;
+}
+async function accionPend(ev){
+  const img = ev.target.closest('img[data-ver]');
+  if(img) return abrirVisor(legPend.map(p => Promise.resolve(URL.createObjectURL(p.blob))), +img.dataset.ver, 'Vista previa');
+  const b = ev.target.closest('button[data-a]'); if(!b) return;
+  const i = +b.dataset.i, a = b.dataset.a;
+  if(a === 'del') legPend.splice(i, 1);
+  if(a === 'izq' && i > 0) [legPend[i-1], legPend[i]] = [legPend[i], legPend[i-1]];
+  if(a === 'der' && i < legPend.length - 1) [legPend[i+1], legPend[i]] = [legPend[i], legPend[i+1]];
+  if(a === 'rot'){ const p = legPend[i]; p.rot = (p.rot + 90) % 360; p.blob = await procesarHoja(p.file, p.modo, p.rot); }
+  renderPend();
+}
+function descartarPend(){ if(confirm('¿Descartar las páginas escaneadas?')){ legPend = []; renderPend(); } }
+async function guardarPend(){
+  if(!legPend.length || !legM) return;
+  const lote = nuevoId(), desc = $('lgDesc').value.trim(), t = Date.now();
+  $('lgGuardar').disabled = true;
+  try {
+    for(let i = 0; i < legPend.length; i++)
+      await colaEsc.put({ id: lote + '_' + (i+1), t: t + i, usuario_id: String(user.id), material_id: String(legM.id),
+        lote, pagina: i + 1, descripcion: desc, blob: legPend[i].blob });
+    const n = legPend.length; legPend = []; $('lgDesc').value = ''; renderPend();
+    toast(`✅ ${n} página(s) guardada(s). Subiendo…`);
+    pintarCola(); await sincronizarEsc();
+  } catch(e){ toast('No se pudo guardar en el dispositivo: ' + e.message, 1); }
+  finally { $('lgGuardar').disabled = false; }
+}
+
+/* ----- Material ya guardado ----- */
+async function pintarCola(){
+  if(!legM) return;
+  const n = (await colaEsc.mias()).filter(x => x.material_id === String(legM.id)).length;
+  $('lgCola').innerHTML = n ? `<div class="alerta wa">${navigator.onLine ? '⟳' : '⚠️'} ${n} página(s) guardada(s) en este equipo, ${navigator.onLine ? 'subiendo…' : 'se suben solas cuando vuelva internet.'}</div>` : '';
+}
+function imgEsc(id){
+  if(!legImg[id]){
+    legImg[id] = sb.rpc('fichero_esc_ver', { p_id: id }).then(({ data, error }) => {
+      if(error) throw error; if(!data || !data.length) throw new Error('No encontrado');
+      return URL.createObjectURL(b64Blob(data[0].datos, data[0].mime));
+    });
+    legImg[id].catch(() => delete legImg[id]);
+  }
+  return legImg[id];
+}
+async function cargarLegajo(){
+  const m = legM; if(!m) return;
+  const { data, error } = await sb.rpc('fichero_esc_listar', { p_material_id: String(m.id) });
+  if(legM !== m) return;
+  pintarCola();
+  if(error){ $('lgLotes').innerHTML = `<div class="alerta er">${/fichero_esc_|schema cache|does not exist/i.test(error.message)
+    ? 'El legajo digital todavía no está activado en la base de datos. Avisale al administrador.' : esc(error.message)}</div>`; return; }
+  legFilas = data || [];
+  $('lgTotal').textContent = legFilas.length ? `${legFilas.length} pág. · ${kb(legFilas.reduce((a, f) => a + f.bytes, 0))}` : '';
+  $('lgZip').classList.toggle('hide', !legFilas.length);
+  if(!legFilas.length){ $('lgLotes').innerHTML = '<p class="meta" style="color:var(--mu)">Todavía no hay material escaneado de este paciente.</p>'; return; }
+  const lotes = {}; legFilas.forEach(f => (lotes[f.lote] = lotes[f.lote] || []).push(f));
+  window._lotes = lotes;
+  $('lgLotes').innerHTML = Object.entries(lotes).map(([lt, ls]) => { ls.sort((a, b) => a.pagina - b.pagina);
+    return `<div class="lote"><div class="cab"><div><b>${esc(ls[0].descripcion || 'Material escaneado')}</b>
+      <div class="meta" style="color:var(--mu);font-size:13px">${fmtLargo(ls[0].creado)} · ${ls.length} pág. · ${esc(ls[0].usuario_nombre || '')}</div></div></div>
+      <div class="thgrid">${ls.map((f, i) => `<div class="th"><span class="n">${i+1}</span><img data-id="${f.id}" data-lote="${lt}" data-i="${i}" alt="Página ${i+1}"></div>`).join('')}</div>
+      <button class="btn sec chico" onclick="pdfLote('${lt}')">📄 Descargar PDF</button>
+      ${esAdmin() ? `<button class="btn er chico" onclick="borrarLote('${lt}')">🗑️ Borrar</button>` : ''}</div>`; }).join('');
+  if(legObs) legObs.disconnect();
+  legObs = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => {
+    if(!e.isIntersecting) return; legObs.unobserve(e.target);
+    imgEsc(e.target.dataset.id).then(u => e.target.src = u, () => e.target.alt = '⚠️');
+  }), { rootMargin: '200px' }) : null;
+  document.querySelectorAll('#lgLotes img[data-id]').forEach(im => {
+    if(legObs) legObs.observe(im); else imgEsc(im.dataset.id).then(u => im.src = u, () => {});
+    im.onclick = () => { const ls = lotes[im.dataset.lote];
+      abrirVisor(ls.map(f => imgEsc(f.id)), +im.dataset.i, ls[0].descripcion || 'Material escaneado');
+      logEsc('ver', m.id, ls[0].descripcion); };
+  });
+}
+async function borrarLote(lt){
+  const ls = window._lotes[lt];
+  if(!confirm(`¿Borrar definitivamente "${ls[0].descripcion || 'Material escaneado'}" (${ls.length} pág.)? No se puede deshacer.`)) return;
+  const { error } = await sb.rpc('fichero_esc_borrar_lote', { p_lote: lt });
+  if(error) return toast(error.message, 1);
+  toast('Escaneo borrado'); cargarLegajo();
+}
+
+/* ----- Visor a pantalla completa ----- */
+let visorL = [], visorI = 0, visorT = '';
+function abrirVisor(lista, i, tit){ visorL = lista; visorI = i; visorT = tit; $('visor').style.display = 'flex'; pintarVisor(); }
+function pintarVisor(){
+  $('visorTx').textContent = `${visorT} · ${visorI + 1} / ${visorL.length}`; $('visorImg').removeAttribute('src');
+  const i = visorI; visorL[i].then(u => { if(i === visorI) $('visorImg').src = u; }, () => toast('No se pudo cargar la página', 1));
+}
+function moverVisor(d){ const n = visorI + d; if(n >= 0 && n < visorL.length){ visorI = n; pintarVisor(); } }
+function cerrarVisor(){ $('visor').style.display = 'none'; }
+addEventListener('keydown', e => { if($('visor').style.display !== 'flex') return;
+  if(e.key === 'Escape') cerrarVisor(); if(e.key === 'ArrowLeft') moverVisor(-1); if(e.key === 'ArrowRight') moverVisor(1); });
+
+/* ----- PDF y backups ----- */
+async function aJpeg(blob){
+  const im = await createImageBitmap(blob), c = document.createElement('canvas'); c.width = im.width; c.height = im.height;
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0);
+  return { url: c.toDataURL('image/jpeg', .8), w: c.width, h: c.height };
+}
+async function pdfLote(lt){
+  const ls = window._lotes[lt], m = legM;
+  try {
+    toast('Armando PDF…'); await libPDF();
+    const { jsPDF } = window.jspdf; let pdf = null;
+    for(const f of ls){
+      const blob = await (await fetch(await imgEsc(f.id))).blob(), { url, w, h } = await aJpeg(blob), o = w > h ? 'l' : 'p';
+      if(!pdf) pdf = new jsPDF({ orientation: o, unit: 'px', format: [w, h], hotfixes: ['px_scaling'] }); else pdf.addPage([w, h], o);
+      pdf.addImage(url, 'JPEG', 0, 0, w, h);
+    }
+    pdf.save(`${nombreArchivo(m.apellido_nombre)}_${nombreArchivo(ls[0].descripcion)}.pdf`);
+    logEsc('pdf', m.id, ls[0].descripcion); toast('✅ PDF descargado');
+  } catch(e){ toast('Error al armar el PDF: ' + e.message, 1); }
+}
+async function verEscBlob(id){
+  const { data, error } = await sb.rpc('fichero_esc_ver', { p_id: id });
+  if(error) throw error; if(!data || !data.length) throw new Error('Página no encontrada');
+  return b64Blob(data[0].datos, data[0].mime);
+}
+async function armarZip(filas, carpeta){
+  await libZIP();
+  const zip = new JSZip(), csv = ['paciente;dni;fecha;descripcion;pagina;archivo;bytes'];
+  for(let i = 0; i < filas.length; i++){
+    const f = filas[i]; toast(`Backup: ${i + 1} de ${filas.length}…`);
+    const fecha = new Date(f.creado).toLocaleString('sv-SE', { timeZone: TZ }).slice(0, 16).replace(/[: ]/g, '-');
+    const ruta = `${carpeta(f)}${fecha}_${nombreArchivo(f.descripcion)}/${String(f.pagina).padStart(3, '0')}.${f.mime === 'image/webp' ? 'webp' : 'jpg'}`;
+    zip.file(ruta, await verEscBlob(f.id));
+    csv.push([f.apellido_nombre || '', f.dni || '', fecha, `"${String(f.descripcion || '').replace(/"/g, '""')}"`, f.pagina, ruta, f.bytes].join(';'));
+  }
+  zip.file('indice.csv', '﻿' + csv.join('\r\n'));
+  return zip.generateAsync({ type: 'blob' });
+}
+async function backupMaterial(){
+  const m = legM; if(!m || !legFilas.length) return;
+  try {
+    const filas = legFilas.map(f => ({ ...f, apellido_nombre: m.apellido_nombre, dni: m.dni }));
+    bajarBlob(await armarZip(filas, () => ''), `legajo_${nombreArchivo(m.apellido_nombre)}_${hoyISO()}.zip`);
+    logEsc('backup', m.id, `${filas.length} pág.`); toast('✅ Backup descargado');
+  } catch(e){ toast('Error en el backup: ' + e.message, 1); }
+}
+async function cargarUsoEsc(){
+  const { data } = await sb.rpc('fichero_esc_uso');
+  const u = data && data[0], ult = lsGet('fichero_ultimo_backup_esc');
+  $('escUso').textContent = u ? `${u.paginas} páginas de ${u.pacientes} paciente(s) · ${kb(Number(u.bytes))} usados`
+    + (ult ? ` · Último backup: ${fmtLargo(ult)}` : ' · Nunca se hizo backup en este equipo') : '';
+}
+async function backupTotal(){
+  if(!esAdmin()) return;
+  const ult = lsGet('fichero_ultimo_backup_esc');
+  let desde = null;
+  if(ult && confirm(`¿Bajar solo lo escaneado desde el último backup (${fmtLargo(ult)})?\n\nAceptar = solo lo nuevo · Cancelar = todo`)) desde = ult;
+  const inicio = new Date().toISOString();
+  try {
+    const { data, error } = await sb.rpc('fichero_esc_todos', { p_desde: desde });
+    if(error) throw error;
+    if(!data || !data.length) return toast(desde ? 'No hay escaneos nuevos desde el último backup' : 'Todavía no hay escaneos');
+    const zip = await armarZip(data, f => `${nombreArchivo(f.apellido_nombre)}_${f.dni || f.material_id}/`);
+    bajarBlob(zip, `fichero_legajos_${desde ? 'nuevos' : 'completo'}_${hoyISO()}.zip`);
+    lsSet('fichero_ultimo_backup_esc', inicio);
+    logEsc('backup_total', null, `${data.length} pág.${desde ? ' desde ' + desde : ''}`);
+    toast('✅ Backup descargado'); cargarUsoEsc();
+  } catch(e){ toast('Error en el backup: ' + e.message, 1); }
+}
 
 /* ---------- INICIO ---------- */
 armarOjitos();
