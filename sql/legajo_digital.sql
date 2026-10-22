@@ -159,6 +159,19 @@ begin
   return query select count(*), count(distinct material_id), coalesce(sum(e.bytes), 0)::bigint from public.fichero_escaneos e;
 end $$;
 
+-- 9b) Resumen por material para los resultados de búsqueda ----------------
+create or replace function public.fichero_esc_resumen(p_ids text[])
+returns table (material_id text, escaneos bigint, paginas bigint, ultimo timestamptz)
+language plpgsql security definer set search_path = public as $$
+declare u jsonb := public._fesc_yo();
+begin
+  return query
+    select e.material_id, count(distinct e.lote), count(*), max(e.creado)
+    from public.fichero_escaneos e
+    where e.material_id = any (p_ids[1:100])
+    group by e.material_id;
+end $$;
+
 -- 10) Permisos: solo se ejecutan las funciones (con token válido adentro)
 grant execute on function
   public.fichero_esc_subir(text, uuid, int, text, text, text),
@@ -167,7 +180,8 @@ grant execute on function
   public.fichero_esc_log(text, text, text),
   public.fichero_esc_borrar_lote(uuid),
   public.fichero_esc_todos(timestamptz),
-  public.fichero_esc_uso()
+  public.fichero_esc_uso(),
+  public.fichero_esc_resumen(text[])
 to anon, authenticated;
 
 notify pgrst, 'reload schema';

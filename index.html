@@ -448,6 +448,7 @@ th{color:var(--mu);font-size:12px}
   <div class="card">
     <h2>📎 Legajo digital</h2>
     <div id="lgMat"></div>
+    <div id="lgOtros"></div>
     <label>Escanear material</label>
     <div class="seg" id="lgModo">
       <button data-m="doc" class="on" onclick="modoEscaneo('doc')">📄 Documento</button>
@@ -697,11 +698,13 @@ async function buscar(exacto){
   if(!mats.length && sinMat.length === 1) return mostrarSinMaterial(sinMat[0]);
 
   window._res = mats; window._sin = sinMat;
+  setTimeout(() => resumenEsc(mats), 0);   // muestra cuánto material escaneado tiene cada uno
   $('bRes').innerHTML = mats.map((m,i) => `
     <div class="item" onclick="elegir(window._res[${i}])">
       <b>${esc(m.apellido_nombre)}</b>
       <div class="meta">${esc(m.tipo)} · Cód. ${esc(m.codigo)}${m.dni?' · DNI '+esc(m.dni):''}${m.legajo_policial?' · Leg. '+esc(m.legajo_policial):''}${m.ubicacion?' · '+esc(m.ubicacion):''}</div>
       ${badgeEstado(m)}
+      <div class="meta" data-escres="${esc(String(m.id))}"></div>
     </div>`).join('') + sinMat.map((p,i) => `
     <div class="item" style="background:#f8fafc" onclick="mostrarSinMaterial(window._sin[${i}])">
       <b style="color:var(--mu)">${esc(nombrePersona(p))}</b>
@@ -1384,7 +1387,29 @@ function abrirLegajo(x){
   $('lgMat').innerHTML = fichaMaterial(m, true).replace(/<\/div>$/, `${badgeEstado(m)}<br>
     <button class="btn sec chico noprint" onclick="legHistorial()">📜 Movimientos del material</button><div id="lgHist"></div></div>`);
   $('lgLotes').innerHTML = '<p class="meta" style="color:var(--mu)">Cargando…</p>';
-  show('vLegajo'); cargarLegajo(); sincronizarEsc();
+  $('lgOtros').innerHTML = '';
+  show('vLegajo'); cargarLegajo(); sincronizarEsc(); otrosMateriales(m);
+}
+/* Resumen en los resultados: "📎 3 escaneos · 7 pág. · último 12/10/2026" */
+async function resumenEsc(mats){
+  if(!mats.length) return;
+  const { data, error } = await sb.rpc('fichero_esc_resumen', { p_ids: mats.map(m => String(m.id)) });
+  if(error) return;
+  const r = {}; (data || []).forEach(x => r[x.material_id] = x);
+  document.querySelectorAll('[data-escres]').forEach(el => { const x = r[el.dataset.escres];
+    el.innerHTML = x ? `<span class="badge b-az">📎 ${x.escaneos} escaneo(s) · ${x.paginas} pág. · último ${new Date(x.ultimo).toLocaleDateString('es-AR', { timeZone: TZ })}</span>`
+      : '<span class="badge b-mu">Sin material escaneado</span>'; });
+}
+/* Si la misma persona tiene otro sobre/material en el fichero, se muestra para pasar de uno a otro */
+async function otrosMateriales(m){
+  if(!m.dni) return;
+  const { data } = await sb.from('fichero_materiales').select('*').eq('dni', m.dni).neq('id', m.id).order('apellido_nombre');
+  if(legM !== m || !data || !data.length) return;
+  window._otros = data;
+  $('lgOtros').innerHTML = `<label>Otro material de esta persona</label>` + data.map((o, i) => `<div class="item" onclick="abrirLegajo(window._otros[${i}])">
+    <b>${esc(o.tipo)} · Cód. ${esc(o.codigo)}</b><div class="meta">${o.ubicacion ? esc(o.ubicacion) : ''}</div>${badgeEstado(o)}
+    <div class="meta" data-escres="${esc(String(o.id))}"></div></div>`).join('');
+  resumenEsc(data);
 }
 function cerrarLegajo(){
   if(legPend.length && !confirm('Hay páginas escaneadas sin guardar. ¿Descartarlas?')) return;
