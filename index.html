@@ -162,6 +162,7 @@ th{color:var(--mu);font-size:12px}
     <button class="tile" onclick="abrirAlta()"><span>➕</span>Ingresar material nuevo</button>
     <button class="tile" onclick="abrirBuscar('consulta')"><span>🔎</span>¿Dónde está un legajo?</button>
   </div>
+  <button class="ancho" onclick="abrirBuscar('paciente')"><span>👤</span><div>Buscar paciente<small>Ver sus datos y todo el material escaneado · escanear · PDF con carátula</small></div></button>
   <button class="ancho" onclick="abrirMovs()"><span>📜</span><div>Movimientos del fichero<small>Quién retiró o devolvió cada material, a qué hora y a dónde fue</small></div></button>
   <button class="ancho hide" id="btnEgreso" onclick="abrirBuscar('egreso')"><span>🗃️</span><div>Egreso definitivo del fichero<small>Alta, baja, retiro u otra causa: registra a qué archivo pasa el sobre</small></div></button>
   <button class="btn hide" id="btnAdmin" style="background:var(--az)" onclick="abrirAdmin()">⚙️ Panel de administración</button>
@@ -476,7 +477,10 @@ th{color:var(--mu);font-size:12px}
     </div>
     <div id="lgCola"></div>
     <div id="lgLotes"></div>
-    <button class="btn sec hide" id="lgZip" onclick="backupMaterial()">⬇️ Descargar todo el legajo (ZIP)</button>
+    <div id="lgDescargas" class="hide">
+      <button class="btn" onclick="pdfLegajoCompleto()">📕 Descargar legajo completo en PDF (con carátula)</button>
+      <button class="btn sec" onclick="backupMaterial()">⬇️ Backup de imágenes (ZIP)</button>
+    </div>
   </div>
 </section>
 
@@ -648,7 +652,7 @@ async function ultimasSalidas(ids){
 }
 
 /* ---------- BUSCAR ---------- */
-const TITULO_BUSCAR = { sacar: '📤 Sacar material', consulta: '🔎 ¿Dónde está?', egreso: '🗃️ Egreso definitivo · buscá el material', devolver: '📥 Devolver material' };
+const TITULO_BUSCAR = { sacar: '📤 Sacar material', consulta: '🔎 ¿Dónde está?', egreso: '🗃️ Egreso definitivo · buscá el material', devolver: '📥 Devolver material', paciente: '👤 Buscar paciente' };
 function abrirBuscar(modo){
   if(modo === 'egreso' && !puedeEgresar()) return toast('No tenés permiso para hacer egresos', 1);
   modoBuscar = modo;
@@ -754,6 +758,7 @@ async function alertaNoEsta(m){
 
 async function elegir(m){
   sel = m;
+  if(modoBuscar === 'paciente') return abrirLegajo(m);
   if(m.estado === 'baja') return mostrarEgresado(m);
   if(modoBuscar === 'devolver') return pedirDevolucion(m);
   if(modoBuscar === 'egreso') return abrirEgreso(m);
@@ -1376,7 +1381,8 @@ function abrirLegajo(x){
   const vis = [...document.querySelectorAll('.view')].find(v => !v.classList.contains('hide'));
   if(vis && vis.id !== 'vLegajo') legVolverA = vis.id;
   legM = m; legPend = []; $('lgDesc').value = ''; renderPend();
-  $('lgMat').innerHTML = fichaMaterial(m, true);
+  $('lgMat').innerHTML = fichaMaterial(m, true).replace(/<\/div>$/, `${badgeEstado(m)}<br>
+    <button class="btn sec chico noprint" onclick="legHistorial()">📜 Movimientos del material</button><div id="lgHist"></div></div>`);
   $('lgLotes').innerHTML = '<p class="meta" style="color:var(--mu)">Cargando…</p>';
   show('vLegajo'); cargarLegajo(); sincronizarEsc();
 }
@@ -1494,7 +1500,7 @@ async function cargarLegajo(){
     ? 'El legajo digital todavía no está activado en la base de datos. Avisale al administrador.' : esc(error.message)}</div>`; return; }
   legFilas = data || [];
   $('lgTotal').textContent = legFilas.length ? `${legFilas.length} pág. · ${kb(legFilas.reduce((a, f) => a + f.bytes, 0))}` : '';
-  $('lgZip').classList.toggle('hide', !legFilas.length);
+  $('lgDescargas').classList.toggle('hide', !legFilas.length);
   if(!legFilas.length){ $('lgLotes').innerHTML = '<p class="meta" style="color:var(--mu)">Todavía no hay material escaneado de este paciente.</p>'; return; }
   const lotes = {}; legFilas.forEach(f => (lotes[f.lote] = lotes[f.lote] || []).push(f));
   window._lotes = lotes;
@@ -1556,6 +1562,97 @@ async function pdfLote(lt){
     logEsc('pdf', m.id, ls[0].descripcion); toast('✅ PDF descargado');
   } catch(e){ toast('Error al armar el PDF: ' + e.message, 1); }
 }
+async function legHistorial(){
+  const box = $('lgHist'); if(box.innerHTML){ box.innerHTML = ''; return; }
+  box.innerHTML = '<p class="meta">Cargando…</p>';
+  const { data } = await sb.from('fichero_movimientos').select('*').eq('material_id', legM.id).order('fecha_hora', { ascending: false }).limit(50);
+  box.innerHTML = (data && data.length) ? '<div style="overflow-x:auto"><table style="margin-top:8px">' + data.map(v => `<tr><td>${fmt(v.fecha_hora)}</td><td>${TIPO_TX[v.tipo] || v.tipo}</td>
+    <td>${esc(v.usuario_nombre || '')}</td><td>${esc(v.destino || '')}${v.motivo ? ' · ' + esc(v.motivo) : ''}${v.solicitante ? ' — ' + esc(v.solicitante) : ''}</td></tr>`).join('') + '</table></div>'
+    : '<p class="meta" style="color:var(--mu)">Sin movimientos registrados.</p>';
+}
+
+/* ----- Legajo completo en PDF: carátula + índice + todas las páginas en A4 ----- */
+const ESTADO_TX = { en_fichero: 'En el fichero', afuera: 'Fuera del fichero (retirado)', baja: 'Egresado del fichero' };
+const pdfTx = s => String(s ?? '').replace(/[^\x20-\x7E -ÿ]/g, '');   // las fuentes base del PDF son Latin-1
+function caratulaPDF(pdf, m, indice, totalPag, filasPrimera, filasExtra){
+  const W = 210, azul = [13, 43, 82], gris = [100, 116, 139];
+  pdf.setDrawColor(...azul); pdf.setLineWidth(.8); pdf.rect(10, 10, 190, 277);
+  pdf.setFillColor(...azul); pdf.rect(10, 10, 190, 30, 'F');
+  pdf.setTextColor(255, 255, 255); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(14);
+  pdf.text('POLICÍA FEDERAL ARGENTINA', W/2, 21, { align: 'center' });
+  pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10);
+  pdf.text('División Junta Permanente de Reconocimientos Médicos', W/2, 28, { align: 'center' });
+  pdf.text('Fichero JPRM', W/2, 34, { align: 'center' });
+
+  pdf.setTextColor(...azul); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(24);
+  pdf.text('LEGAJO DIGITAL', W/2, 60, { align: 'center' });
+  pdf.setTextColor(26, 34, 48); pdf.setFontSize(17);
+  const nom = pdf.splitTextToSize(pdfTx(m.apellido_nombre).toUpperCase(), 170);
+  pdf.text(nom, W/2, 74, { align: 'center' });
+  let y = 74 + nom.length * 7 + 6;
+
+  const datos = [['DNI', m.dni], ['Legajo policial', m.legajo_policial], ['Tipo de material', m.tipo], ['Código del sobre', m.codigo],
+    ['Estado', ESTADO_TX[m.estado] || m.estado], ['Ubicación', m.ubicacion]].filter(d => d[1]);
+  pdf.setFillColor(238, 242, 247); pdf.roundedRect(25, y, 160, datos.length * 8 + 6, 2, 2, 'F');
+  pdf.setFontSize(11); y += 9;
+  datos.forEach(([k, v]) => { pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...gris); pdf.text(k, 32, y);
+    pdf.setFont('helvetica', 'bold'); pdf.setTextColor(26, 34, 48); pdf.text(pdfTx(v), 80, y); y += 8; });
+  y += 8;
+
+  const cabTabla = yy => { pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9); pdf.setTextColor(...gris);
+    pdf.text('FECHA', 22, yy); pdf.text('DESCRIPCIÓN', 52, yy); pdf.text('PÁGS.', 160, yy, { align: 'right' }); pdf.text('DESDE PÁG.', 188, yy, { align: 'right' });
+    pdf.setDrawColor(215, 222, 232); pdf.setLineWidth(.3); pdf.line(20, yy + 2, 190, yy + 2); return yy + 7; };
+  pdf.setTextColor(...azul); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(12);
+  pdf.text(`CONTENIDO · ${indice.length} escaneo(s) · ${legFilas.length} página(s)`, 20, y); y = cabTabla(y + 7);
+  const pie = () => { pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(...gris);
+    pdf.text(pdfTx(`Emitido el ${fmtLargo(new Date())} por ${nombreUser()} · Total: ${totalPag} páginas`), W/2, 277, { align: 'center' });
+    pdf.text('Documento de uso interno · Contiene información médica confidencial', W/2, 282, { align: 'center' }); };
+  pie();
+  indice.forEach((r, i) => {
+    if(i === filasPrimera || (i > filasPrimera && (i - filasPrimera) % filasExtra === 0)){
+      pdf.addPage('a4', 'p'); pdf.setDrawColor(...azul); pdf.setLineWidth(.8); pdf.rect(10, 10, 190, 277);
+      pdf.setTextColor(...azul); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(12);
+      pdf.text(pdfTx(`CONTENIDO (continuación) · ${m.apellido_nombre}`), 20, 22); y = cabTabla(32); pie();
+    }
+    const f = r.lote[0];
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10); pdf.setTextColor(26, 34, 48);
+    pdf.text(new Date(f.creado).toLocaleDateString('es-AR', { timeZone: TZ }), 22, y);
+    pdf.text(pdfTx(pdf.splitTextToSize(f.descripcion || 'Material escaneado', 95)[0]), 52, y);
+    pdf.text(String(r.lote.length), 160, y, { align: 'right' }); pdf.text(String(r.desde), 188, y, { align: 'right' });
+    y += 7;
+  });
+}
+async function pdfLegajoCompleto(){
+  const m = legM; if(!m || !legFilas.length) return toast('Este paciente no tiene material escaneado', 1);
+  try {
+    toast('Armando el legajo en PDF…'); await libPDF();
+    const { jsPDF } = window.jspdf, pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+    // escaneos del más viejo al más nuevo
+    const porLote = {}; legFilas.forEach(f => (porLote[f.lote] = porLote[f.lote] || []).push(f));
+    const lotes = Object.values(porLote).map(l => l.sort((a, b) => a.pagina - b.pagina)).sort((a, b) => new Date(a[0].creado) - new Date(b[0].creado));
+    const filasPrimera = Math.max(4, 16 - Math.max(0, Math.ceil(String(m.apellido_nombre || '').length / 28) - 1) * 2), filasExtra = 34;
+    const pagsCaratula = 1 + (lotes.length > filasPrimera ? Math.ceil((lotes.length - filasPrimera) / filasExtra) : 0);
+    let p = pagsCaratula + 1; const indice = lotes.map(l => { const r = { lote: l, desde: p }; p += l.length; return r; });
+    const totalPag = p - 1;
+    caratulaPDF(pdf, m, indice, totalPag, filasPrimera, filasExtra);
+    let n = pagsCaratula;
+    for(const { lote } of indice) for(const f of lote){
+      n++; toast(`PDF: página ${n} de ${totalPag}…`);
+      const { url, w, h } = await aJpeg(await (await fetch(await imgEsc(f.id))).blob());
+      const o = w > h ? 'l' : 'p', W = o === 'l' ? 297 : 210, H = o === 'l' ? 210 : 297, mg = 10, top = 14, bot = 12;
+      pdf.addPage('a4', o);
+      const s = Math.min((W - 2*mg) / w, (H - top - bot) / h), iw = w * s, ih = h * s;
+      pdf.addImage(url, 'JPEG', (W - iw) / 2, top + (H - top - bot - ih) / 2, iw, ih);
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(100, 116, 139);
+      pdf.text(pdfTx(`${m.apellido_nombre}${m.dni ? ' · DNI ' + m.dni : ''} · ${f.descripcion || 'Material escaneado'} (${f.pagina}/${lote.length}) · ${new Date(f.creado).toLocaleDateString('es-AR', { timeZone: TZ })}`).slice(0, 130), mg, 9);
+      pdf.text('Uso interno · JPRM', mg, H - 5);
+      pdf.text(`Pág. ${n} de ${totalPag}`, W - mg, H - 5, { align: 'right' });
+    }
+    pdf.save(`Legajo_${nombreArchivo(m.apellido_nombre)}_${m.dni || m.codigo}.pdf`);
+    logEsc('pdf', m.id, `Legajo completo con carátula (${totalPag} pág.)`); toast('✅ Legajo completo descargado');
+  } catch(e){ toast('Error al armar el PDF: ' + e.message, 1); }
+}
+
 async function verEscBlob(id){
   const { data, error } = await sb.rpc('fichero_esc_ver', { p_id: id });
   if(error) throw error; if(!data || !data.length) throw new Error('Página no encontrada');
