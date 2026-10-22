@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Activar legajo digital</title>
+<style>
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#eef2f7;color:#1a2230}
+header{background:#0d2b52;color:#fff;padding:16px;font-weight:700;font-size:17px}
+main{max-width:520px;margin:0 auto;padding:16px}
+.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px #0001}
+.n{display:inline-flex;width:28px;height:28px;border-radius:50%;background:#1b4a86;color:#fff;align-items:center;justify-content:center;font-weight:700;margin-right:8px}
+.btn{display:block;width:100%;padding:16px;border:0;border-radius:12px;background:#1b4a86;color:#fff;font-size:17px;font-weight:700;margin-top:12px;text-align:center;text-decoration:none;cursor:pointer}
+.btn.ok{background:#15803d}
+p{margin:8px 0;line-height:1.4}
+small{color:#64748b}
+#estado{font-weight:600}
+textarea{width:100%;height:120px;font-size:12px;margin-top:10px;border:1px solid #d7dee8;border-radius:10px;padding:8px}
+</style>
+</head>
+<body>
+<header>📁 Fichero JPRM · Activar legajo digital</header>
+<main>
+  <div class="card">
+    <p><span class="n">1</span><b>Copiá el código</b></p>
+    <button class="btn" id="copiar">📋 Copiar código SQL</button>
+    <p id="estado"><small>Cargando el código…</small></p>
+    <textarea id="sql" readonly class="hide" style="display:none"></textarea>
+  </div>
+  <div class="card">
+    <p><span class="n">2</span><b>Abrí el editor de Supabase</b></p>
+    <p><small>Si te pide ingresar, usá <b>Continue with GitHub</b>.</small></p>
+    <a class="btn" href="https://supabase.com/dashboard/project/kyofdbedxoebwvjicppp/sql/new" target="_blank" rel="noopener">🟢 Abrir editor SQL</a>
+  </div>
+  <div class="card">
+    <p><span class="n">3</span><b>Pegá y ejecutá</b></p>
+    <p>Mantené apretado en el editor → <b>Pegar</b>. Después tocá <b>Run</b>.</p>
+    <p>Tiene que aparecer <b>"Success. No rows returned"</b>.</p>
+  </div>
+  <div class="card">
+    <p><span class="n">4</span><b>Listo</b></p>
+    <a class="btn ok" href="./">📁 Volver al Fichero</a>
+  </div>
+</main>
+<script>
+let sql = '';
+const est = document.getElementById('estado'), ta = document.getElementById('sql');
+fetch('sql/legajo_digital.sql?v=' + Date.now()).then(r => r.text()).then(t => {
+  sql = t; ta.value = t; est.innerHTML = '<small>Código listo (' + t.split('\n').length + ' líneas).</small>';
+}).catch(() => est.textContent = 'No se pudo cargar el código. Revisá la conexión.');
+document.getElementById('copiar').onclick = async () => {
+  if(!sql) return;
+  try { await navigator.clipboard.writeText(sql); est.textContent = '✅ Copiado. Ahora abrí el editor (paso 2).'; }
+  catch(e){ ta.style.display = 'block'; ta.focus(); ta.select(); ta.setSelectionRange(0, sql.length);
+    est.textContent = 'Tocá el cuadro de abajo → Seleccionar todo → Copiar.'; }
+};
+</script>
+</body>
+</html>
