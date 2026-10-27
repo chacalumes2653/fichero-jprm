@@ -597,9 +597,9 @@ async function sesionViva(){
   return data[0];
 }
 function nombreUser(){ return (user.jerarquia ? user.jerarquia + ' ' : '') + user.nombre; }
-const esAdmin = () => !!user && ROLES_PANEL.includes(user.rol);               // funciones de administración
+const esAdmin = () => !!user;   // cualquier usuario logueado entra al panel (menos gestión de usuarios)               // funciones de administración
 const gestionaUsuarios = () => !!user && ROLES_USUARIOS.includes(user.rol);   // alta/edición/baja de usuarios
-const puedeEgresar = () => user && ROLES_EGRESO.includes(user.rol);
+const puedeEgresar = () => !!user;   // cualquier usuario logueado puede hacer el egreso definitivo
 
 function abrirCambioPass(obligatorio){
   ocultarClaves();

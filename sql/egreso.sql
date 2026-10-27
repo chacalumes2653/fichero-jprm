@@ -3,8 +3,8 @@
 -- Ejecutar completo en Supabase > SQL Editor (se puede correr más de una vez).
 --
 -- Hace el cambio de estado + el movimiento en un solo paso, validando el
--- token de sesión del Fichero (fichero_yo). Así cualquier usuario con rol
--- admin / oficial / autorizado puede dar de baja definitiva, sin depender
+-- token de sesión del Fichero (fichero_yo). Así cualquier usuario logueado,
+-- sea o no admin, puede dar de baja definitiva, sin depender
 -- de los permisos de las tablas.
 -- =====================================================================
 
@@ -26,9 +26,7 @@ begin
   if y is null or y.id is null then
     raise exception 'Sesión vencida o inválida. Ingresá de nuevo.' using errcode = '28000';
   end if;
-  if coalesce(y.rol::text, '') not in ('admin', 'oficial', 'autorizado') then
-    raise exception 'No tenés permiso para hacer egresos';
-  end if;
+  -- cualquier usuario con sesión válida puede hacer el egreso (sin importar el rol)
 
   update public.fichero_materiales
      set estado = 'baja'

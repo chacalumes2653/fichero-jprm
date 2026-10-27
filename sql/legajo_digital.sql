@@ -125,7 +125,6 @@ create or replace function public.fichero_esc_borrar_lote(p_lote uuid)
 returns int language plpgsql security definer set search_path = public as $$
 declare u jsonb := public._fesc_yo(); n int; mat text; des text;
 begin
-  if coalesce(u->>'rol','') not in ('admin','oficial','autorizado') then raise exception 'No tenés permiso para borrar escaneos'; end if;
   select material_id, descripcion into mat, des from public.fichero_escaneos where lote = p_lote limit 1;
   delete from public.fichero_escaneos where lote = p_lote;
   get diagnostics n = row_count;
@@ -140,7 +139,6 @@ returns table (id uuid, material_id text, lote uuid, pagina int, descripcion tex
 language plpgsql security definer set search_path = public as $$
 declare u jsonb := public._fesc_yo();
 begin
-  if coalesce(u->>'rol','') not in ('admin','oficial','autorizado') then raise exception 'No tenés permiso para hacer el backup total'; end if;
   return query
     select e.id, e.material_id, e.lote, e.pagina, e.descripcion, e.mime, e.bytes, e.creado,
            m.apellido_nombre::text, m.dni::text
