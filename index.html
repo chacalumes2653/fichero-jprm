@@ -318,6 +318,18 @@ th{color:var(--mu);font-size:12px}
 </section>
 
 <!-- ============ TICKET / ETIQUETA ============ -->
+<section class="view hide" id="vDevCheck">
+  <button class="btn sec volver-top noprint" onclick="cancelarDevolucion()">← Cancelar</button>
+  <div class="card">
+    <h2>📥 Devolver material</h2>
+    <div id="dcMat"></div>
+    <div class="alerta wa" style="margin-top:12px">¿El sobre vuelve con <b>material nuevo</b> (estudios, informes, hojas agregadas)?</div>
+    <button class="btn" id="dcScan" onclick="confirmarDevolucion(true)">📷 Escanear material nuevo</button>
+    <button class="btn ok" id="dcNo" onclick="confirmarDevolucion(false)">✅ No hay material nuevo</button>
+    <p class="meta" style="color:var(--mu);font-size:13px">Elegí una opción para registrar la devolución.</p>
+  </div>
+</section>
+
 <section class="view hide" id="vTicket">
   <div class="card" id="tBody"></div>
   <div class="noprint">
@@ -367,7 +379,7 @@ th{color:var(--mu);font-size:12px}
   <div class="card">
     <h2>⚙️ Panel de administración</h2>
     <div class="tabs">
-      <button data-t="personal" onclick="adminTab('personal')">👥 Personal autorizado</button>
+      <button data-t="personal" id="tabBtnPersonal" onclick="adminTab('personal')">👥 Personal autorizado</button>
       <button data-t="material" onclick="adminTab('material')">📁 Material</button>
       <button data-t="movs" onclick="adminTab('movs')">📜 Movimientos</button>
       <button data-t="otros" onclick="adminTab('otros')">📊 Reporte y QR</button>
@@ -508,7 +520,9 @@ th{color:var(--mu);font-size:12px}
 const SUPABASE_URL = 'https://kyofdbedxoebwvjicppp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_C_8uYK42SkpzHg8pLbP8GA_wdWu6ylS';
 const HORAS_SESION = 12;           // cuánto dura el login en el celular
-const ROLES_EGRESO = ['admin'];    // quiénes pueden hacer el egreso definitivo (sumá 'oficial' o 'autorizado' si querés)
+const ROLES_EGRESO = ['admin', 'oficial', 'autorizado'];   // quiénes pueden hacer el egreso definitivo
+const ROLES_PANEL  = ['admin', 'oficial', 'autorizado'];   // quiénes entran al Panel de administración
+const ROLES_USUARIOS = ['admin'];                           // quiénes pueden crear / editar / eliminar usuarios
 const DESTINOS_EGRESO = ['Archivo de egresados', 'Fichero de retiros', 'Fichero de bajas', 'División Personal', 'Mesa de entradas'];
 /* =================================================== */
 
@@ -583,7 +597,8 @@ async function sesionViva(){
   return data[0];
 }
 function nombreUser(){ return (user.jerarquia ? user.jerarquia + ' ' : '') + user.nombre; }
-const esAdmin = () => user && user.rol === 'admin';
+const esAdmin = () => !!user && ROLES_PANEL.includes(user.rol);               // funciones de administración
+const gestionaUsuarios = () => !!user && ROLES_USUARIOS.includes(user.rol);   // alta/edición/baja de usuarios
 const puedeEgresar = () => user && ROLES_EGRESO.includes(user.rol);
 
 function abrirCambioPass(obligatorio){
@@ -610,7 +625,7 @@ async function cambiarPass(){
 }
 
 async function entrar(){
-  $('hdrUser').textContent = '👤 ' + nombreUser() + (esAdmin() ? ' · Admin' : '');
+  $('hdrUser').textContent = '👤 ' + nombreUser() + (gestionaUsuarios() ? ' · Admin' : '');
   $('btnSalir').classList.remove('hide');
   $('btnAdmin').classList.toggle('hide', !esAdmin());
   $('btnEgreso').classList.toggle('hide', !puedeEgresar());
@@ -947,15 +962,31 @@ async function devolverPorCodigo(t){
   if(!data) return toast('Código no registrado: ' + c, 1);
   pedirDevolucion(data);
 }
-async function pedirDevolucion(m){
+/* Al devolver, la persona elige: escanear el material nuevo que trae el sobre, o "no hay material nuevo" */
+let devVolverA = 'vDevolver';
+function pedirDevolucion(m){
   sel = m;
   if(m.estado !== 'afuera') return toast('Ese material ya figura en el fichero', 1);
-  if(!confirm(`¿Registrar la devolución de:\n${m.apellido_nombre} (${m.tipo})?`)) return;
-  const { data: upd, error: e1 } = await sb.from('fichero_materiales').update({ estado: 'en_fichero' }).eq('id', m.id).eq('estado','afuera').select();
-  if(e1 || !upd || !upd.length) return toast('No se pudo registrar (¿ya fue devuelto?)', 1);
-  const { data: ins, error } = await sb.from('fichero_movimientos').insert({ material_id: m.id, tipo: 'devolucion', usuario_id: user.id, usuario_nombre: nombreUser() }).select().single();
-  if(error) return toast('Error: ' + error.message, 1);
-  ticket('📥', 'DEVUELTO AL FICHERO', m, ins);
+  const vis = [...document.querySelectorAll('.view')].find(v => !v.classList.contains('hide'));
+  devVolverA = vis && vis.id !== 'vDevCheck' ? vis.id : 'vDevolver';
+  $('dcMat').innerHTML = fichaMaterial(m, true);
+  $('dcScan').disabled = $('dcNo').disabled = false;
+  show('vDevCheck');
+}
+function cancelarDevolucion(){ ['vLogin','vPass','vTicket'].includes(devVolverA) ? irMenu() : show(devVolverA); }
+async function confirmarDevolucion(conNuevo){
+  const m = sel; if(!m) return;
+  $('dcScan').disabled = $('dcNo').disabled = true;
+  try {
+    const { data: upd, error: e1 } = await sb.from('fichero_materiales').update({ estado: 'en_fichero' }).eq('id', m.id).eq('estado','afuera').select();
+    if(e1 || !upd || !upd.length){ toast('No se pudo registrar (¿ya fue devuelto?)', 1); return cancelarDevolucion(); }
+    m.estado = 'en_fichero';
+    const { data: ins, error } = await sb.from('fichero_movimientos').insert({ material_id: m.id, tipo: 'devolucion', usuario_id: user.id, usuario_nombre: nombreUser(),
+      observaciones: conNuevo ? 'Volvió con material nuevo (escaneado al devolver)' : 'Sin material nuevo' }).select().single();
+    if(error){ await sb.from('fichero_materiales').update({ estado: 'afuera' }).eq('id', m.id); m.estado = 'afuera'; toast('Error: ' + error.message, 1); return cancelarDevolucion(); }
+    ticket('📥', 'DEVUELTO AL FICHERO', m, ins);
+    if(conNuevo){ abrirLegajo(m); toast('📷 Tocá «Escanear» para sumar las hojas nuevas'); }   // al volver del legajo queda el comprobante
+  } finally { $('dcScan').disabled = $('dcNo').disabled = false; }
 }
 
 /* ---------- ALTA ---------- */
@@ -1064,11 +1095,13 @@ const TIPO_BADGE = { salida: 'b-wa', devolucion: 'b-ok', alta: 'b-az', baja: 'b-
 function abrirAdmin(tab){
   if(!esAdmin()) return irMenu();
   enAdmin = true;
+  $('tabBtnPersonal').classList.toggle('hide', !gestionaUsuarios());
   show('vAdmin');
   adminTab(tab || tabAdmin);
 }
 function adminTab(t){
   if(t === 'movs') return abrirMovs();   // usa la misma pantalla que ve todo el personal (con filtros extra para admin)
+  if(t === 'personal' && !gestionaUsuarios()) t = 'material';   // sin permiso de usuarios → arranca en Material
   tabAdmin = t;
   document.querySelectorAll('#vAdmin .tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
   ['personal','material','otros'].forEach(x => $('tab' + x[0].toUpperCase() + x.slice(1)).classList.toggle('hide', x !== t));
@@ -1079,6 +1112,7 @@ function adminTab(t){
 
 /* ----- Personal autorizado ----- */
 async function cargarUsuariosAdmin(soloDatos){
+  if(!gestionaUsuarios()){ if(soloDatos) await usuariosDesdeMovs(); return; }
   const { data, error } = await sb.rpc('fichero_admin_usuarios');
   if(error){ toast(error.message, 1); return; }
   adminUsuarios = data || [];
@@ -1097,8 +1131,17 @@ async function cargarUsuariosAdmin(soloDatos){
         ? `<button class="btn er chico" onclick="event.stopPropagation();eliminarUsuario(${u.id})">🗑️ Eliminar</button>` : ''}</div>
     </div>`).join('') || '<p class="meta">No hay personal cargado.</p>';
 }
+/* Para quien tiene panel pero no gestiona usuarios: arma el filtro "por usuario" con quienes figuran en los movimientos */
+async function usuariosDesdeMovs(){
+  const { data } = await sb.from('fichero_movimientos').select('usuario_id, usuario_nombre').order('fecha_hora', { ascending: false }).limit(3000);
+  const vistos = new Map();
+  (data || []).forEach(m => { if(m.usuario_id != null && !vistos.has(m.usuario_id)) vistos.set(m.usuario_id, m.usuario_nombre || ('Usuario ' + m.usuario_id)); });
+  const lista = [...vistos].sort((a, b) => String(a[1]).localeCompare(String(b[1]), 'es'));
+  $('vUser').innerHTML = '<option value="">Todos</option>' + lista.map(([id, n]) => `<option value="${esc(String(id))}">${esc(n)}</option>`).join('');
+}
 function claveTemporal(){ return String(Math.floor(100000 + Math.random()*900000)); }
 function abrirUsuario(id){
+  if(!gestionaUsuarios()) return toast('Solo un administrador puede crear o modificar usuarios', 1);
   uEditId = id;
   const u = id ? adminUsuarios.find(x => x.id === id) : null;
   $('uTit').textContent = u ? '✏️ Editar personal autorizado' : '➕ Agregar personal autorizado';
@@ -1136,6 +1179,7 @@ function elegirPadron(p){
   $('uRes').innerHTML = `<div class="alerta ok">✅ ${esc(p.apellido + ' ' + p.nombre)} — completá el rol y guardá.</div>`;
 }
 async function guardarUsuario(){
+  if(!gestionaUsuarios()) return toast('Solo un administrador puede crear o modificar usuarios', 1);
   const args = { p_id: uEditId, p_nombre: $('uNom').value, p_jerarquia: $('uJer').value, p_dni: $('uDni').value.replace(/\D/g,''),
     p_legajo: $('uLeg').value.trim(), p_usuario: $('uUsu').value, p_rol: $('uRol').value,
     p_activo: uEditId ? $('uAct').checked : true, p_pass: uEditId ? null : $('uPass').value.trim() };
@@ -1150,6 +1194,7 @@ async function guardarUsuario(){
   mostrarCredenciales(args.p_nombre.toUpperCase(), args.p_usuario.trim().toLowerCase(), args.p_pass, true);
 }
 async function eliminarUsuario(id){
+  if(!gestionaUsuarios()) return toast('Solo un administrador puede crear o modificar usuarios', 1);
   const u = adminUsuarios.find(x => x.id === id); if(!u) return;
   if(!confirm(`¿ELIMINAR a ${u.nombre} (usuario ${u.usuario})?\n\nYa no va a poder ingresar. Los movimientos que registró quedan en el historial con su nombre.\n\nEsto no se puede deshacer.`)) return;
   const { error } = await sb.rpc('fichero_admin_eliminar_usuario', { p_id: id });
@@ -1158,6 +1203,7 @@ async function eliminarUsuario(id){
   abrirAdmin('personal');
 }
 async function blanquearClave(){
+  if(!gestionaUsuarios()) return toast('Solo un administrador puede crear o modificar usuarios', 1);
   const u = adminUsuarios.find(x => x.id === uEditId); if(!u) return;
   if(!confirm(`¿Blanquear la contraseña de ${u.nombre}?\nSe le va a generar una clave nueva y se le cierran las sesiones abiertas.`)) return;
   const nueva = claveTemporal();

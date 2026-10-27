@@ -120,12 +120,12 @@ begin
   perform public._fesc_log(u, p_accion, p_material_id, left(p_detalle, 200));
 end $$;
 
--- 7) Borrar un escaneo completo (solo admin) ----------------------------
+-- 7) Borrar un escaneo completo (personal con panel) ----------------------------
 create or replace function public.fichero_esc_borrar_lote(p_lote uuid)
 returns int language plpgsql security definer set search_path = public as $$
 declare u jsonb := public._fesc_yo(); n int; mat text; des text;
 begin
-  if coalesce(u->>'rol','') <> 'admin' then raise exception 'Solo un administrador puede borrar escaneos'; end if;
+  if coalesce(u->>'rol','') not in ('admin','oficial','autorizado') then raise exception 'No tenés permiso para borrar escaneos'; end if;
   select material_id, descripcion into mat, des from public.fichero_escaneos where lote = p_lote limit 1;
   delete from public.fichero_escaneos where lote = p_lote;
   get diagnostics n = row_count;
@@ -133,14 +133,14 @@ begin
   return n;
 end $$;
 
--- 8) Índice completo para el backup total (solo admin) ------------------
+-- 8) Índice completo para el backup total (personal con panel) ------------------
 create or replace function public.fichero_esc_todos(p_desde timestamptz default null)
 returns table (id uuid, material_id text, lote uuid, pagina int, descripcion text, mime text, bytes int,
                creado timestamptz, apellido_nombre text, dni text)
 language plpgsql security definer set search_path = public as $$
 declare u jsonb := public._fesc_yo();
 begin
-  if coalesce(u->>'rol','') <> 'admin' then raise exception 'Solo un administrador puede hacer el backup total'; end if;
+  if coalesce(u->>'rol','') not in ('admin','oficial','autorizado') then raise exception 'No tenés permiso para hacer el backup total'; end if;
   return query
     select e.id, e.material_id, e.lote, e.pagina, e.descripcion, e.mime, e.bytes, e.creado,
            m.apellido_nombre::text, m.dni::text
