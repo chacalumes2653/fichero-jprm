@@ -840,6 +840,22 @@ async function abrirEgreso(m){
   $('eDestList').innerHTML = [...new Set([...usados, ...DESTINOS_EGRESO])].map(d => `<option value="${esc(d)}">`).join('');
 }
 function volverEgreso(){ enAdmin ? abrirAdmin('material') : abrirBuscar('egreso'); }
+/* Egreso definitivo: primero por el servidor (fichero_egreso, valida la sesión y el rol);
+   si esa función todavía no está creada en Supabase, lo hace directo sobre las tablas como antes. */
+async function egresarMaterial(m, estadoAnt, d){
+  const r = await sb.rpc('fichero_egreso', { p_material_id: String(m.id), p_estado_ant: estadoAnt, p_destino: d.destino || null,
+    p_motivo: d.motivo || null, p_solicitante: d.solicitante || null, p_observaciones: d.observaciones || null });
+  const falta = r.error && (r.error.code === 'PGRST202' || /could not find the function/i.test(r.error.message || ''));
+  if(!r.error) return r.data;
+  if(!falta) throw r.error;
+  const { data: upd, error: e1 } = await sb.from('fichero_materiales').update({ estado: 'baja' }).eq('id', m.id).eq('estado', estadoAnt).select();
+  if(e1) throw e1;
+  if(!upd || !upd.length) throw new Error('El material cambió de estado mientras tanto (o la base no permite la baja a tu usuario). Buscalo de nuevo.');
+  const { data: ins, error: e2 } = await sb.from('fichero_movimientos').insert({ material_id: m.id, tipo: 'baja', usuario_id: user.id, usuario_nombre: nombreUser(),
+    destino: d.destino || null, motivo: d.motivo || null, solicitante: d.solicitante || null, observaciones: d.observaciones || null }).select().single();
+  if(e2){ await sb.from('fichero_materiales').update({ estado: estadoAnt }).eq('id', m.id); throw e2; }
+  return ins;
+}
 async function confirmarEgreso(){
   if(!puedeEgresar()) return toast('No tenés permiso para hacer egresos', 1);
   let motivo = $('eMot').value;
@@ -857,14 +873,7 @@ async function confirmarEgreso(){
   $('eBtn').disabled = true;
   const estadoAnt = sel.estado;
   try{
-    const { data: upd, error: e1 } = await sb.from('fichero_materiales')
-      .update({ estado: 'baja' }).eq('id', sel.id).eq('estado', estadoAnt).select();
-    if(e1) throw e1;
-    if(!upd || !upd.length) return toast('El material cambió de estado mientras tanto. Buscalo de nuevo.', 1);
-    const mov = { material_id: sel.id, tipo: 'baja', usuario_id: user.id, usuario_nombre: nombreUser(),
-                  destino, motivo, solicitante: exp ? 'Expte./Nota ' + exp : null, observaciones: $('eObs').value.trim() || null };
-    const { data: ins, error: e2 } = await sb.from('fichero_movimientos').insert(mov).select().single();
-    if(e2){ await sb.from('fichero_materiales').update({ estado: estadoAnt }).eq('id', sel.id); throw e2; }
+    const ins = await egresarMaterial(sel, estadoAnt, { destino, motivo, solicitante: exp ? 'Expte./Nota ' + exp : null, observaciones: $('eObs').value.trim() || null });
     sel.estado = 'baja';
     ticket('🗃️', 'EGRESO REGISTRADO', sel, ins);
   } catch(e){ toast('Error: ' + e.message, 1); }
@@ -1257,6 +1266,11 @@ async function cambiarEstadoMat(m, nuevo){
   const baja = nuevo === 'baja';
   const motivo = prompt(baja ? `Motivo de la baja de ${m.apellido_nombre}:` : `¿Reactivar ${m.apellido_nombre}? (observación opcional)`, '');
   if(motivo === null) return;
+  if(baja){
+    try { await egresarMaterial(m, m.estado, { observaciones: motivo.trim() || null }); }
+    catch(e){ return toast('Error: ' + e.message, 1); }
+    toast('Material dado de baja'); return cargarMaterialAdmin();
+  }
   const { data, error } = await sb.from('fichero_materiales').update({ estado: nuevo }).eq('id', m.id).eq('estado', m.estado).select();
   if(error) return toast(error.message, 1);
   if(!data || !data.length) return toast('El material cambió de estado mientras tanto, actualizá', 1);
