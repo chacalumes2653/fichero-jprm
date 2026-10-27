@@ -318,6 +318,18 @@ th{color:var(--mu);font-size:12px}
 </section>
 
 <!-- ============ TICKET / ETIQUETA ============ -->
+<section class="view hide" id="vDevCheck">
+  <button class="btn sec volver-top noprint" onclick="cancelarDevolucion()">← Cancelar</button>
+  <div class="card">
+    <h2>📥 Devolver material</h2>
+    <div id="dcMat"></div>
+    <div class="alerta wa" style="margin-top:12px">¿El sobre vuelve con <b>material nuevo</b> (estudios, informes, hojas agregadas)?</div>
+    <button class="btn" id="dcScan" onclick="confirmarDevolucion(true)">📷 Escanear material nuevo</button>
+    <button class="btn ok" id="dcNo" onclick="confirmarDevolucion(false)">✅ No hay material nuevo</button>
+    <p class="meta" style="color:var(--mu);font-size:13px">Elegí una opción para registrar la devolución.</p>
+  </div>
+</section>
+
 <section class="view hide" id="vTicket">
   <div class="card" id="tBody"></div>
   <div class="noprint">
@@ -947,15 +959,31 @@ async function devolverPorCodigo(t){
   if(!data) return toast('Código no registrado: ' + c, 1);
   pedirDevolucion(data);
 }
-async function pedirDevolucion(m){
+/* Al devolver, la persona elige: escanear el material nuevo que trae el sobre, o "no hay material nuevo" */
+let devVolverA = 'vDevolver';
+function pedirDevolucion(m){
   sel = m;
   if(m.estado !== 'afuera') return toast('Ese material ya figura en el fichero', 1);
-  if(!confirm(`¿Registrar la devolución de:\n${m.apellido_nombre} (${m.tipo})?`)) return;
-  const { data: upd, error: e1 } = await sb.from('fichero_materiales').update({ estado: 'en_fichero' }).eq('id', m.id).eq('estado','afuera').select();
-  if(e1 || !upd || !upd.length) return toast('No se pudo registrar (¿ya fue devuelto?)', 1);
-  const { data: ins, error } = await sb.from('fichero_movimientos').insert({ material_id: m.id, tipo: 'devolucion', usuario_id: user.id, usuario_nombre: nombreUser() }).select().single();
-  if(error) return toast('Error: ' + error.message, 1);
-  ticket('📥', 'DEVUELTO AL FICHERO', m, ins);
+  const vis = [...document.querySelectorAll('.view')].find(v => !v.classList.contains('hide'));
+  devVolverA = vis && vis.id !== 'vDevCheck' ? vis.id : 'vDevolver';
+  $('dcMat').innerHTML = fichaMaterial(m, true);
+  $('dcScan').disabled = $('dcNo').disabled = false;
+  show('vDevCheck');
+}
+function cancelarDevolucion(){ ['vLogin','vPass','vTicket'].includes(devVolverA) ? irMenu() : show(devVolverA); }
+async function confirmarDevolucion(conNuevo){
+  const m = sel; if(!m) return;
+  $('dcScan').disabled = $('dcNo').disabled = true;
+  try {
+    const { data: upd, error: e1 } = await sb.from('fichero_materiales').update({ estado: 'en_fichero' }).eq('id', m.id).eq('estado','afuera').select();
+    if(e1 || !upd || !upd.length){ toast('No se pudo registrar (¿ya fue devuelto?)', 1); return cancelarDevolucion(); }
+    m.estado = 'en_fichero';
+    const { data: ins, error } = await sb.from('fichero_movimientos').insert({ material_id: m.id, tipo: 'devolucion', usuario_id: user.id, usuario_nombre: nombreUser(),
+      observaciones: conNuevo ? 'Volvió con material nuevo (escaneado al devolver)' : 'Sin material nuevo' }).select().single();
+    if(error){ await sb.from('fichero_materiales').update({ estado: 'afuera' }).eq('id', m.id); m.estado = 'afuera'; toast('Error: ' + error.message, 1); return cancelarDevolucion(); }
+    ticket('📥', 'DEVUELTO AL FICHERO', m, ins);
+    if(conNuevo){ abrirLegajo(m); toast('📷 Tocá «Escanear» para sumar las hojas nuevas'); }   // al volver del legajo queda el comprobante
+  } finally { $('dcScan').disabled = $('dcNo').disabled = false; }
 }
 
 /* ---------- ALTA ---------- */
